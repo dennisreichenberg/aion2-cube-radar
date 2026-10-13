@@ -8,6 +8,7 @@ public enum RecordKind
     Heartbeat,
     SelfInfo,
     MapLoad,
+    Teleport,
     ObjectSpawn,
     ObjectRemoved,
     OpenStart,
@@ -31,7 +32,9 @@ public sealed class RadarConfig
     public Dictionary<uint, CubeTemplate> CubeTemplates { get; init; } = new()
     {
         [1200039] = new CubeTemplate(1200039, "Verteron", "verified"),
+        [1200041] = new CubeTemplate(1200041, "Verteron", "verified"),
     };
+    public Dictionary<int, string> MapZones { get; init; } = new() { [1010] = "Verteron" };
     public uint OpenDoneItem { get; init; } = 0x259AC523;
     public string North { get; init; } = "-y";
     public double FixFreshSeconds { get; init; } = 5;
@@ -50,6 +53,7 @@ public sealed class RadarConfig
         [0x0036] = RecordKind.Heartbeat,
         [0x3336] = RecordKind.SelfInfo,
         [0x2136] = RecordKind.MapLoad,
+        [0x2336] = RecordKind.Teleport,
         [0x3436] = RecordKind.ObjectSpawn,
         [0x3536] = RecordKind.ObjectRemoved,
         [0x3836] = RecordKind.OpenStart,
@@ -98,6 +102,10 @@ public sealed class RadarConfig
             if (c.RootElement.TryGetProperty("open_done_item", out var item)) openItem = item.GetProperty("value").GetUInt32();
         }
 
+        var mapZones = new Dictionary<int, string>();
+        if (r.TryGetProperty("map_zones", out var mz))
+            foreach (var p in mz.EnumerateObject()) mapZones[int.Parse(p.Name)] = p.Value.GetString() ?? "?";
+
         string? Str(string name) => r.TryGetProperty(name, out var v) ? v.GetString() : null;
         double Num(string name, double fallback) => r.TryGetProperty(name, out var v) ? v.GetDouble() : fallback;
         var spots = Str("spots_csv");
@@ -107,6 +115,7 @@ public sealed class RadarConfig
             SelfIdOpcodes = selfIds,
             SelfCheck = checks,
             CubeTemplates = cubes,
+            MapZones = mapZones,
             OpenDoneItem = openItem,
             North = Str("north") ?? "-y",
             FixFreshSeconds = Num("fix_fresh_s", 5),
@@ -125,6 +134,7 @@ public sealed class RadarConfig
         "heartbeat" => RecordKind.Heartbeat,
         "self_info" => RecordKind.SelfInfo,
         "map_load" => RecordKind.MapLoad,
+        "teleport" => RecordKind.Teleport,
         "object_spawn" => RecordKind.ObjectSpawn,
         "object_removed" => RecordKind.ObjectRemoved,
         "open_start" => RecordKind.OpenStart,

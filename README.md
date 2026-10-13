@@ -3,7 +3,7 @@
 Passives Werkzeug für Aion 2 (Global). Es liest per Npcap den Server→Client-Traffic mit, wie Wireshark, und soll
 live anzeigen, wo gerade Hidden Cubes stehen. Es betreibt kein Memory-Reading und keine Injection und sendet nichts.
 
-Stand: **Phase 3 (Radar) gebaut, Abnahme im Spiel steht aus**. Der Hidden Cube ist in Verteron identifiziert (Template 1200039, Sende-Radius ≈ 105 m). Die eigene Position kommt aus vier ereignisgebundenen Quellen. Alle Erkenntnisse stehen in
+Stand: **Phase 3 (Radar) abgenommen**. Der Hidden Cube ist in Verteron identifiziert (Templates 1200039 und 1200041, Sende-Radius ≈ 100 m). Die eigene Position kommt aus vier ereignisgebundenen Quellen. Alle Erkenntnisse stehen in
 [`docs/FINDINGS.md`](docs/FINDINGS.md).
 
 ## Aufbau
@@ -39,7 +39,10 @@ Die ausführbare Datei liegt dann unter `src\CubeRadar.Cli\bin\Release\net10.0-w
 ```
 
 Öffnet `http://127.0.0.1:5313` im Browser.
-- **Radar** zeigt die Umgebung um dich (Nord oben, Ringe, Sichtweite ≈ 105 m gestrichelt).
+- **Radar** zeigt die Umgebung um dich (Nord oben, Ringe, Sichtweite ≈ 100 m gestrichelt).
+- **Höhe:** ▲ = Cube über dir, ▼ = unter dir, ■ = gleiche Höhe (± 3 m). Die Höhenleiste rechts im Radar zeigt deine
+  Höhe als Mittellinie. In der Liste steht „▲ 38 m über dir“ usw. Ist deine Position älter als 5 s, steht ihr Alter
+  dabei.
 - **Karte** zeigt alle Cubes, deine Spur und, falls vorhanden, die möglichen Spots der Zone.
 - **Liste:** Distanz, Kompassrichtung, Höhenunterschied, „gesehen vor“, „existiert seit“ und Status. Die Status sind:
   sichtbar, außer Sicht (steht vermutlich noch), wird geöffnet, geöffnet (von dir oder Spieler N), weg.

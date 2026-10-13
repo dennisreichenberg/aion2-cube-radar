@@ -13,6 +13,8 @@
   --spot: #3a434e;
   --hist: #9b7cf0;
   --warn: #ff6b5b;
+  --up: #7cc4ff;
+  --down: #ff9f6b;
   --ok: #3ddc84;
   --mid: #f2b33d;
   color-scheme: dark;
@@ -119,6 +121,7 @@ canvas {
 .sw.me { background: var(--me); border-radius: 50%; }
 .sw.spot { background: var(--spot); border-radius: 50%; }
 .sw.hist { background: var(--hist); border-radius: 50%; opacity: .7; }
+.tri { font-style: normal; font-size: 11px; margin-right: 4px; color: var(--visible); }
 
 aside {
   border-left: 1px solid var(--line);
@@ -156,6 +159,11 @@ a { color: var(--me); }
 .cube .dist small { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 6px; }
 .cube .arrow { grid-row: span 2; align-self: center; width: 44px; height: 44px; }
 .cube .status { font-size: 12.5px; }
+.cube .height { font-size: 13.5px; font-weight: 600; }
+.cube .height.up { color: var(--up); }
+.cube .height.down { color: var(--down); }
+.cube .height.level, .cube .height.unknown { color: var(--muted); }
+.cube .height .age { font-weight: 400; color: var(--muted); font-size: 12px; }
 .cube.Visible .status { color: var(--visible); }
 .cube.OutOfView .status { color: var(--out); }
 .cube.Opening .status { color: var(--opening); }

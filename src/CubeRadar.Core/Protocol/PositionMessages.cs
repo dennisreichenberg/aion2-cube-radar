@@ -12,6 +12,10 @@ public enum PositionKind : byte
     Cast,
     /// <summary><c>0e 38</c>: position of the target.</summary>
     Target,
+    /// <summary><c>21 36</c>: own position after a map load / teleport.</summary>
+    MapLoad,
+    /// <summary><c>23 36</c>: own position after a teleport.</summary>
+    Teleport,
 }
 
 /// <summary>A world position of one entity taken from a record that names it.</summary>

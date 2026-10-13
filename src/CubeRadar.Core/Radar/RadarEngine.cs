@@ -66,6 +66,8 @@ public sealed class RadarEngine
     private readonly Dictionary<RecordKind, long> _lastKind = new();
     private bool _selfFromInfo;
     private long _startMs;
+    private long _quietUntilMs;                       // after a teleport: object churn says nothing about radii
+    private (PositionFix Fix, long T)? _ownFixWithoutId; // map load / teleport before we know our id
 
     /// <summary>Every object spawn seen (any template); <see cref="Removed"/> is the 35 36 reason, 0 while present.</summary>
     private sealed record ObjectInfo(uint Template, float X, float Y, float Z, long T, long CreatedMs)
@@ -142,7 +144,12 @@ public sealed class RadarEngine
                 }
                 break;
             case RecordKind.MapLoad:
-                if (body.Length >= 8) OnMap((int)Wire.U32(body, 4));
+                if (body.Length >= 8) OnMap((int)Wire.U32(body, 4), t);
+                if (body.Length >= 28) OwnFixFromServer(body, 16, PositionKind.MapLoad, t);
+                break;
+            case RecordKind.Teleport:
+                _quietUntilMs = t + 6_000;
+                if (body.Length >= 18) OwnFixFromServer(body, 6, PositionKind.Teleport, t);
                 break;
             case RecordKind.ObjectSpawn:
                 if (ObjectMessages.TryParseSpawn(body, out var spawn)) OnSpawn(spawn, t);
@@ -197,6 +204,19 @@ public sealed class RadarEngine
         Ring = null;
         _trail.Clear();
         if (_lastFixByEntity.TryGetValue(id, out var last)) AdoptFix(last.Fix, last.T);
+        if (_ownFixWithoutId is { } own && own.T > SelfFixMs) AdoptFix(own.Fix with { EntityId = id }, own.T);
+    }
+
+    /// <summary>21 36 / 23 36 carry our own position after a load or teleport (verified: 0 m from the next fix).</summary>
+    private void OwnFixFromServer(ReadOnlySpan<byte> b, int at, PositionKind kind, long t)
+    {
+        var x = BitConverter.ToSingle(b.Slice(at, 4));
+        var y = BitConverter.ToSingle(b.Slice(at + 4, 4));
+        var z = BitConverter.ToSingle(b.Slice(at + 8, 4));
+        if (!PositionMessages.IsWorldPosition(x, y, z)) return;
+        var fix = new PositionFix(SelfId ?? 0, x, y, z, kind);
+        if (SelfId is null) _ownFixWithoutId = (fix, t);
+        else AdoptFix(fix, t);
     }
 
     private void OnPosition(PositionFix fix, long t)
@@ -210,9 +230,11 @@ public sealed class RadarEngine
 
     private void AdoptFix(PositionFix fix, long t)
     {
+        var jump = _trail.Count > 0 && Units.Planar(_trail[^1].X, _trail[^1].Y, fix.X, fix.Y) > 5_000 + 3_000 * Math.Max(0, t - _trail[^1].T) / 1000.0;
         SelfFix = fix;
         SelfFixMs = t;
         Ring = null;
+        if (jump) _trail.Add((t, float.NaN, float.NaN)); // teleport: no line across the map
         _trail.Add((t, fix.X, fix.Y));
         if (_trail.Count > 600) _trail.RemoveRange(0, _trail.Count - 600);
 
@@ -224,7 +246,7 @@ public sealed class RadarEngine
                 Units.Planar(fix.X, fix.Y, c.X, c.Y) < _cfg.GoneCheckUnits)
                 _goneDeadline[c.ObjectId] = t + 3_000; // must be sent again within 3 s, else someone opened it
 
-        if (_spots?.Nearest(fix.X, fix.Y, 30_000) is { } spot) Zone = spot.Zone;
+        if ((MapId is null || !_cfg.MapZones.ContainsKey(MapId.Value)) && _spots?.Nearest(fix.X, fix.Y, 30_000) is { } spot) Zone = spot.Zone;
     }
 
     private bool FixFresh(long t) => SelfFix is not null && t - SelfFixMs <= _cfg.FixFreshSeconds * 1000;
@@ -348,9 +370,22 @@ public sealed class RadarEngine
         }
     }
 
-    private void OnMap(int mapId)
+    private void OnMap(int mapId, long t)
     {
-        if (MapId == mapId) return; // same map again = in-map teleport
+        _quietUntilMs = t + 6_000;
+        _events.Clear();
+        Ring = null;
+        var known = _cfg.MapZones.TryGetValue(mapId, out var zone);
+        if (known) Zone = zone;
+        if (MapId == mapId) return; // same map again = in-map teleport: cubes stay where they are
+        if (MapId is null)
+        {
+            // First load since the radar started: it may just be a teleport inside the zone we were already in.
+            MapId = mapId;
+            if (known)
+                foreach (var c in _cubes.Values.Where(c => c.Zone != zone).ToList()) _cubes.Remove(c.ObjectId);
+            return;
+        }
         MapId = mapId;
         _cubes.Clear();
         _objects.Clear();
@@ -378,6 +413,7 @@ public sealed class RadarEngine
 
     private void AddRingEvent(long t, uint template, bool enter, float x, float y)
     {
+        if (t < _quietUntilMs) return;
         var e = new RingEvent(t, template, enter, x, y);
         if (SelfFix is { } fix && t - SelfFixMs is >= 0 and <= 1000) Sample(e, fix);
         _events.Add(e);
@@ -389,6 +425,7 @@ public sealed class RadarEngine
     {
         e.Sampled = true;
         var d = Units.Planar(fix.X, fix.Y, e.X, e.Y);
+        if (d > 30_000) return; // not a view-range event (teleport, stale state)
         var key = (e.Template, e.Enter);
         if (!_radii.TryGetValue(key, out var list)) _radii[key] = list = new List<double>();
         list.Add(d);
@@ -480,7 +517,7 @@ public sealed class RadarEngine
                 now, SelfId, MapId, Zone ?? _cubes.Values.Select(c => c.Zone).FirstOrDefault(z => z is not null),
                 SelfFix is { } sf ? new FixView(sf.X, sf.Y, sf.Z, SelfFixMs, now - SelfFixMs, sf.Kind.ToString()) : null,
                 Ring is { } r ? new RingView(r.X, r.Y, r.Uncertainty, r.TimeMs, now - r.TimeMs, r.Events) : null,
-                _trail.Select(p => new[] { p.X, p.Y }).ToList(),
+                _trail.Select(p => float.IsNaN(p.X) ? Array.Empty<float>() : new[] { p.X, p.Y }).ToList(),
                 cubes,
                 SelfCheck(now),
                 new OrientationView(_north.NorthX, _north.NorthY, _north.EastX, _north.EastY, _cfg.North),

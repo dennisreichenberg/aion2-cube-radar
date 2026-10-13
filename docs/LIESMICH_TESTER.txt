@@ -25,6 +25,11 @@ Starten
      Steht bei Position "unbekannt": im Spiel einmal einen Buff auf dich selbst wirken.
   Beenden: im schwarzen Konsolenfenster q eintippen und Enter.
 
+Anzeige
+  Dreieck nach oben = Cube liegt ueber dir, nach unten = unter dir, Quadrat = gleiche Hoehe (+/- 3 m).
+  Rechts im Radar zeigt eine Hoehenleiste alle Cubes relativ zu deiner Hoehe. Deine Position kommt nur bei
+  Ereignissen (Buffs, Kampf, Teleport); ihr Alter steht oben in der Kopfzeile.
+
 Testauftrag (ca. 15-20 Minuten in Verteron oder Altgard)
   1. In ein Gebiet mit vielen Cube-Spots laufen.
   2. Wenn das Radar piept: Entfernung und Richtung in der Liste merken. Erst wenn du den Cube im Spiel

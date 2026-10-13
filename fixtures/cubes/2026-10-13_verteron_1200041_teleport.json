@@ -1,0 +1,72 @@
+{
+ "description": "Verteron, own entity 9180: two in-map teleports' worth of 21 36 (map load, map 1010) + 23 36 (teleport) carrying the own position (equal to the next 2a 38 fix), and the lifecycle of cube 55235 with template 1200041 (spawned 1 s before it was seen, 46 m away; opened with the key by us).",
+ "capture": "captures/radar_20261013_122710/raw.pcapng",
+ "captured": "2026-10-13",
+ "client": "Steam build 25800038",
+ "self_id": 9180,
+ "map_id": 1010,
+ "cube": {
+  "id": 55235,
+  "template": 1200041,
+  "x": 70962,
+  "y": 99276,
+  "z": 8796,
+  "thgl_spot": "hidden_cube@99276:70962"
+ },
+ "frames": [
+  {
+   "t": 1791887233680,
+   "op": "2a38",
+   "src": "top",
+   "hex": "dc470111e208c80000002c01000000000000a250cd34a1010000dc4701009f591ec690a5624700beac46"
+  },
+  {
+   "t": 1791887249327,
+   "op": "2136",
+   "src": "top",
+   "hex": "0b000000f20300003a03870000000000587274c71c5ea74700bc4e4680e333430200000000000000000000000000"
+  },
+  {
+   "t": 1791887252725,
+   "op": "2336",
+   "src": "top",
+   "hex": "000000000000587274c71c5ea74700bc4e4605000000a805"
+  },
+  {
+   "t": 1791887252777,
+   "op": "2a38",
+   "src": "lz4",
+   "hex": "dc470111e30812270000881300000000000099adcd34a1010000dc470100587274c71c5ea74700bc4e46"
+  },
+  {
+   "t": 1791887766289,
+   "op": "2a38",
+   "src": "top",
+   "hex": "dc470111820902e1f505ffffffffffffffff8075d52abb030000dc47010009cc9247dd04be477b4a3546"
+  },
+  {
+   "t": 1791887770691,
+   "op": "3436",
+   "src": "top",
+   "hex": "c3af030400a94f120023998a47d3e5c147036f09460000000000000000010106c080d534a10100000000000000000000508a10ef070000"
+  },
+  {
+   "t": 1791887788894,
+   "op": "3836",
+   "src": "top",
+   "hex": "c3af03dc4701"
+  },
+  {
+   "t": 1791887793092,
+   "op": "3a36",
+   "src": "top",
+   "hex": "c3af03dc470100000023c59a25"
+  },
+  {
+   "t": 1791887793795,
+   "op": "3536",
+   "src": "top",
+   "hex": "c3af03040300"
+  }
+ ]
+}

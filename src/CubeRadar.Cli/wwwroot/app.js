@@ -1,7 +1,9 @@
 // Cube Radar web UI: renders the state pushed by `cuberadar radar` over /ws. Coordinates are game units (cm).
 "use strict";
 
-const SEND_RADIUS = 10500; // measured send radius for cubes (docs/FINDINGS.md B8), planar units
+const SEND_RADIUS = 10000; // measured send radius for cubes (docs/FINDINGS.md B8), planar units
+const LEVEL_M = 3;         // |height difference| up to this counts as "same height"
+const STRIP = 64;          // width of the height strip on the right of the radar (px)
 const STATUS_TEXT = {
   Visible: "sichtbar",
   OutOfView: "außer Sicht – steht vermutlich noch",
@@ -85,9 +87,25 @@ function orientation() {
 function me() {
   const r = msg.radar;
   const fix = r.self, ring = r.ring;
-  if (ring && (!fix || ring.timeMs > fix.timeMs)) return { x: ring.x, y: ring.y, z: null, age: ring.ageMs, ring: ring.uncertainty, src: "Schätzung" };
-  if (fix) return { x: fix.x, y: fix.y, z: fix.z, age: fix.ageMs, ring: 0, src: fix.source };
+  // The ring estimate has no height: the last real fix's z stands in (its age is shown).
+  const z = fix ? fix.z : null, zAge = fix ? fix.ageMs : null;
+  if (ring && (!fix || ring.timeMs > fix.timeMs)) return { x: ring.x, y: ring.y, z, zAge, age: ring.ageMs, ring: ring.uncertainty, src: "Schätzung" };
+  if (fix) return { x: fix.x, y: fix.y, z, zAge, age: fix.ageMs, ring: 0, src: fix.source };
   return null;
+}
+
+/** Height of a cube relative to us in metres, or null when our height is unknown. */
+function dzOf(c, m) {
+  return m && m.z != null ? (c.z - m.z) / 100 : null;
+}
+
+function heightInfo(dz) {
+  if (dz == null) return { cls: "unknown", text: "Höhe unbekannt", short: "" };
+  const a = Math.abs(Math.round(dz));
+  if (Math.abs(dz) <= LEVEL_M) return { cls: "level", text: "≈ gleiche Höhe", short: "≈" };
+  return dz > 0
+    ? { cls: "up", text: `▲ ${a} m über dir`, short: `▲${a}` }
+    : { cls: "down", text: `▼ ${a} m unter dir`, short: `▼${a}` };
 }
 
 function rel(p, from) {
@@ -159,13 +177,15 @@ function renderList(fresh) {
   document.getElementById("empty").hidden = r.cubes.length > 0;
   document.getElementById("list").innerHTML = rows.map(({ c, rp }) => {
     const color = { Visible: COLORS.visible, OutOfView: COLORS.out, Opening: COLORS.opening }[c.status] || COLORS.gone;
-    const dz = m && m.z != null ? (c.z - m.z) / 100 : null;
+    const hi = heightInfo(dzOf(c, m));
     const status = STATUS_TEXT[c.status] + (c.openedBy ? (c.openedBySelf ? " (von dir)" : ` (von Spieler ${c.openedBy})`) : "");
-    const dist = rp ? `${fmtNum(rp.dist / 100)} m<small>${compass(rp.bearing)} ${Math.round(rp.bearing)}°${dz != null ? ` · ${dz >= 0 ? "▲" : "▼"} ${Math.abs(Math.round(dz))} m` : ""}</small>` : `? m<small>eigene Position unbekannt</small>`;
+    const dist = rp ? `${fmtNum(rp.dist / 100)} m<small>${compass(rp.bearing)} ${Math.round(rp.bearing)}°</small>` : `? m<small>eigene Position unbekannt</small>`;
+    const heightAge = m && m.zAge > msg.radar.fixFreshSeconds * 1000 ? ` <span class="age">(deine Höhe von vor ${fmtAge(m.zAge)})</span>` : "";
     const created = c.createdMs ? ` · existiert seit ${fmtAge(r.nowMs - c.createdMs)}` : "";
     return `<li class="cube ${c.status}${freshKeys.has(`${c.objectId}@${c.firstSeenMs}`) ? " new" : ""}">
       <div class="dist">${dist}</div>
       ${rp ? arrowSvg(rp.bearing, color) : "<span></span>"}
+      <div class="height ${hi.cls}">${hi.text}${heightAge}</div>
       <div class="status">${status}${c.learned ? ` · Template gelernt (${c.learned})` : ""}</div>
       <div class="meta">${c.zone || "?"} · Template ${c.template} · #${c.objectId} · gesehen vor ${fmtAge(r.nowMs - c.firstSeenMs)}${created}${c.status !== "Visible" ? ` · Status seit ${fmtAge(r.nowMs - c.statusSinceMs)}` : ""}</div>
       <div class="coords">x ${fmtNum(c.x)} · y ${fmtNum(c.y)} · z ${fmtNum(c.z)}
@@ -187,7 +207,8 @@ const ctx = canvas.getContext("2d");
 function draw() {
   if (!msg) return;
   const dpr = window.devicePixelRatio || 1;
-  const w = canvas.clientWidth, h = canvas.clientHeight;
+  let w = canvas.clientWidth;
+  const h = canvas.clientHeight;
   if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
@@ -197,12 +218,14 @@ function draw() {
 
   const r = msg.radar, m = me(), o = orientation();
   const zoneSpots = spots.map((s) => ({ x: s[0], y: s[1] }));
+  const full = w;
+  w -= STRIP; // the height strip takes the right edge
   let center, scale;
   if (ui.mode === "radar" && (m || r.cubes.length)) {
     center = m || avg(r.cubes);
     scale = (Math.min(w, h) / 2 - 24) / (ui.range * 100);
   } else {
-    const pts = [...r.cubes, ...r.trail.map((p) => ({ x: p[0], y: p[1] })), ...(m ? [m] : [])];
+    const pts = [...r.cubes, ...r.trail.filter((p) => p.length === 2).map((p) => ({ x: p[0], y: p[1] })), ...(m ? [m] : [])];
     const fit = pts.length ? pts : zoneSpots;
     if (!fit.length) return drawText(w / 2, h / 2, "Noch keine Daten", COLORS.muted, "center");
     const ns = fit.map((p) => p.x * o.nx + p.y * o.ny), es = fit.map((p) => p.x * o.ex + p.y * o.ey);
@@ -243,10 +266,13 @@ function draw() {
     ctx.strokeStyle = COLORS.me;
     ctx.globalAlpha = 0.35;
     ctx.beginPath();
-    r.trail.forEach((p, i) => {
+    let pen = false;
+    for (const p of r.trail) {
+      if (p.length < 2) { pen = false; continue; } // teleport: break the line
       const [x, y] = toScreen({ x: p[0], y: p[1] });
-      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-    });
+      pen ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      pen = true;
+    }
     ctx.stroke();
     ctx.globalAlpha = 1;
   }
@@ -282,18 +308,13 @@ function draw() {
       ctx.moveTo(10, 0); ctx.lineTo(-6, 7); ctx.lineTo(-6, -7); ctx.closePath();
       ctx.fill();
       ctx.restore();
-    } else if (c.status === "Visible" || c.status === "Opening") {
+    } else if (c.status === "Visible" || c.status === "Opening" || c.status === "OutOfView") {
       const pulse = c.status === "Opening" ? 3 + 2 * Math.sin(t / 150) : 0;
+      const filled = c.status !== "OutOfView";
       ctx.shadowColor = color;
-      ctx.shadowBlur = 12;
-      ctx.fillStyle = color;
-      ctx.fillRect(x - 6 - pulse / 2, y - 6 - pulse / 2, 12 + pulse, 12 + pulse);
+      ctx.shadowBlur = filled ? 12 : 0;
+      marker(x, y, 7 + pulse / 2, heightInfo(dzOf(c, m)).cls, color, filled);
       ctx.shadowBlur = 0;
-    } else if (c.status === "OutOfView") {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x - 6, y - 6, 12, 12);
-      ctx.lineWidth = 1;
     } else {
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
@@ -301,8 +322,58 @@ function draw() {
       line(x - 5, y + 5, x + 5, y - 5);
       ctx.lineWidth = 1;
     }
-    if (rp) drawText(x + 10, y - 8, `${fmtNum(rp.dist / 100)} m`, color);
+    const hs = heightInfo(dzOf(c, m)).short;
+    if (rp) drawText(x + 11, y - 8, `${fmtNum(rp.dist / 100)} m${hs ? " · " + hs : ""}`, color);
   }
+
+  drawHeightStrip(full, h, r, m);
+}
+
+/** Square for "same height", triangle up / down for above / below us. */
+function marker(x, y, s, cls, color, filled) {
+  ctx.beginPath();
+  if (cls === "up") { ctx.moveTo(x, y - s); ctx.lineTo(x + s, y + s * 0.8); ctx.lineTo(x - s, y + s * 0.8); }
+  else if (cls === "down") { ctx.moveTo(x, y + s); ctx.lineTo(x + s, y - s * 0.8); ctx.lineTo(x - s, y - s * 0.8); }
+  else ctx.rect(x - s * 0.85, y - s * 0.85, s * 1.7, s * 1.7);
+  ctx.closePath();
+  ctx.lineWidth = 2;
+  if (filled) { ctx.fillStyle = color; ctx.fill(); }
+  else { ctx.strokeStyle = color; ctx.stroke(); }
+  ctx.lineWidth = 1;
+}
+
+/** Vertical strip: our height in the middle, every live cube above or below it. */
+function drawHeightStrip(full, h, r, m) {
+  const x0 = full - STRIP, mid = h / 2;
+  ctx.fillStyle = "rgba(255,255,255,0.03)";
+  ctx.fillRect(x0, 0, STRIP, h);
+  ctx.strokeStyle = COLORS.line;
+  line(x0, 0, x0, h);
+  drawText(x0 + STRIP / 2, 20, "Höhe", COLORS.muted, "center");
+  const live = r.cubes.filter((c) => c.status === "Visible" || c.status === "Opening" || c.status === "OutOfView");
+  if (!m || m.z == null) {
+    drawText(x0 + STRIP / 2, mid, "?", COLORS.muted, "center");
+    return;
+  }
+  const dzs = live.map((c) => dzOf(c, m));
+  const range = Math.max(20, Math.ceil(Math.max(0, ...dzs.map(Math.abs)) / 10) * 10 + 10); // metres, middle to edge
+  const px = (h / 2 - 34) / range;
+  for (const v of [range, range / 2, -range / 2, -range]) {
+    const y = mid - v * px;
+    ctx.strokeStyle = COLORS.line;
+    line(x0 + 6, y, x0 + 14, y);
+    drawText(x0 + 17, y + 4, `${v > 0 ? "+" : ""}${Math.round(v)}`, COLORS.muted);
+  }
+  ctx.strokeStyle = COLORS.me;
+  line(x0 + 4, mid, full - 4, mid);
+  drawText(full - 4, mid - 4, "du", COLORS.me, "right");
+  live.forEach((c, i) => {
+    const dz = dzs[i];
+    const y = mid - Math.max(-range, Math.min(range, dz)) * px;
+    const color = { Visible: COLORS.visible, OutOfView: COLORS.out, Opening: COLORS.opening }[c.status];
+    marker(x0 + 22, y, 5, heightInfo(dz).cls, color, c.status !== "OutOfView");
+    drawText(x0 + 31, y + 4, `${dz > 0 ? "+" : ""}${Math.round(dz)}`, color);
+  });
 }
 
 function avg(list) {

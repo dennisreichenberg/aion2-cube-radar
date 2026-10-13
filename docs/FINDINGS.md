@@ -105,7 +105,12 @@ cube 2: 86 8d 02 | 04 00 | a7 4f 12 00 | a0 b4 47 c7  b2 6c 03 48  00 de 96 46 |
   Treffern, besser noch die aus `33 36`.
 - Die eigene Entity-ID war in allen drei Sitzungen 9180 (11:27, 11:41, 11:43 Uhr).
 
-### B8. Sende-Radius für Cubes: ≈ 10.500 Einheiten in der Ebene (≈ 105 m) (2026-10-13, 2 Messungen)
+### B8. Sende-Radius für Cubes: ≈ 9.700–10.500 Einheiten in der Ebene (≈ 100 m) (2026-10-13, 4 Messungen)
+Nachtrag aus `radar_20261013_122710`:
+- Cube 52651: Die eigene Position stammt von 0,1 s vor der Meldung, Abstand **9.689**.
+- Cube 37048: interpoliert **9.680**.
+
+Ein Cube, der direkt in Sichtweite spawnt (B10), zählt nicht als Radius-Messung. Die erste Messreihe:
 Die Position zum Zeitpunkt des ersten `34 36` ist linear zwischen den benachbarten `2a 38`-Angaben interpoliert
 (`tools/radius.py`):
 
@@ -122,6 +127,30 @@ Die Position zum Zeitpunkt des ersten `34 36` ist linear zwischen den benachbart
   
   Cube Watchs „~15.000“ passt nicht zu unseren Werten.
 - Offen: der Austrittsradius bei Cubes (`35 36` Grund `01`). Es gab noch keine Cube-Sichtung ohne Öffnen.
+
+### B9. Zweite Cube-Variante in Verteron: Template **1200041** (2026-10-13)
+Quelle: `captures/radar_20261013_122710` (665 s, Verteron, Build 25800038). Fixture:
+`fixtures/cubes/2026-10-13_verteron_1200041_teleport.json`, Test `TeleportFixtureTests`.
+```
+34 36  c3 af 03 | 04 00 | a9 4f 12 00 | 23 99 8a 47 d3 e5 c1 47 …   id 55235, template 1200041, (70962, 99276, 8796)
+38 36  c3 af 03 dc 47 01                                            Öffnen durch uns (9180)
+3a 36  c3 af 03 dc 47 01 00 00 00 23 c5 9a 25                       fertig: count 1, item 0x259AC523 (wie B6)
+35 36  c3 af 03 04 03 00                                            entfernt, Grund 04
+```
+- Die Position stimmt **exakt** (0 Einheiten, auch z) mit dem th.gl-Spot `hidden_cube@99276:70962` überein.
+- Die Cube-Templates unterscheiden sich also auch innerhalb einer Zone (1200039, 1200041). Das Radar lernt
+  unbekannte Varianten zur Laufzeit. Das hat es live per Spot-Treffer getan, bevor 1200041 in `config/cubes.json`
+  stand.
+
+### B10. `created` im Spawn ist der Spawn-Zeitpunkt (2026-10-13)
+Cube 55235 hat `created` = 12:36:09.792. Er kam 1 s später bei uns an, als wir 46 m entfernt standen. Hätte er
+vorher existiert, wäre er schon früher gesendet worden, weil wir in Sichtweite waren. Die anderen vier Cubes waren bei
+der ersten Sichtung 54–161 s alt. Damals standen wir 112–589 m entfernt, sie existierten also schon. Das Radar zeigt
+deshalb „existiert seit“.
+
+### B11. Ein anderer Spieler öffnet einen Cube vor uns (2026-10-13)
+Cube 52651 tauchte bei 97 m Entfernung auf. 6,5 s später begann Spieler 9019 ihn zu öffnen (`38 36` → `3a 36` mit
+Key-Item → `35 36` Grund `04`). Das Radar meldete korrekt „geöffnet (von Spieler 9019)“.
 
 ## Phase 2: Eigene Position (BELEGT, 2026-10-13)
 
@@ -176,6 +205,19 @@ sich per Kleinste-Quadrate kombinieren.
   (Sitzungen 112703 / 114103 / 114345).
 - Einschränkung: Die Radien sind aus derselben Sitzung gelernt. Das Radar braucht dafür eine wachsende Radientabelle
   je Template.
+
+### P7. Map-Load `21 36` und Teleport `23 36` tragen die eigene Position (2026-10-13, 6×)
+```
+21 36  0b 00 00 00 | f2 03 00 00 | 3a 03 87 00 | 00 00 00 00 | 58 72 74 c7 1c 5e a7 47 00 bc 4e 46 | 80 e3 33 43 | 02 00 …
+       load count    map 1010      u32           u32 0         x −62578  y 85692  z 13231            heading
+23 36  00 00 00 00 00 00 | 58 72 74 c7 1c 5e a7 47 00 bc 4e 46 | 05 00 00 00 | a8 05     (≈ 3,5 s nach 21 36)
+```
+- Bei allen 6 Teleports (innerhalb von Map 1010) lag die nächste eigene Positionsmeldung **0 m** daneben.
+- Map **1010 = Verteron**, eingetragen in `config/radar.json` unter `map_zones`.
+- Ein Map-Load auf dieselbe Map ist ein Teleport innerhalb der Zone: Die Cubes bleiben.
+- Nach einem Teleport entfernt der Server alle alten Objekte. Das verfälschte die Radius-Statistik (Austritte bei
+  100.000+ Einheiten). Das Radar nimmt deshalb 6 s nach `21 36`/`23 36` keine Stichproben und verwirft solche über
+  30.000 Einheiten.
 
 ### P6. Hypothese „Positions-Ping“
 Jeder eigene Self-Buff erzeugt `2a 38`/`2b 38` mit der eigenen Position. Ein billiger Self-Buff auf einer Taste wäre
@@ -250,7 +292,7 @@ sondern ein anderer Spieler. Bestätigt durch B6.
 | `41 36` | NPC-Spawn, kind `0c/0d` NPC, `04/05` „andere Objekte“, `1c/1d/1f/5d/5f` Summons | | alle Meter; Kinds laut HamMeter-Doku | Layout beobachtet (O4) |
 | `42 36` | Tod/Entfernt: id, 0, flag (1 tot geladen/entfernt, 3 im Kampf gestorben, 7 aus der Welt) | | cyberbadger, HamMeter-Doku | COMMUNITY |
 
-**Sichtweite (Interest-Radius):** Cube Watch nennt „etwa 15.000 Einheiten“. Unsere Messung (B8) ergibt ≈ 10.500 in der
+**Sichtweite (Interest-Radius):** Cube Watch nennt „etwa 15.000 Einheiten“. Unsere Messung (B8) ergibt ≈ 9.700–10.500 in der
 Ebene.
 
 **Kartenachsen (Cube Watch):** Norden = Welt −Y, Osten = Welt +X. Ebenfalls eine HYPOTHESE.
@@ -271,13 +313,13 @@ Ebene.
 
 | # | Frage | Stand | Nächster Schritt |
 |---|---|---|---|
-| 1 | Kommen Cubes als Entity? | **Ja, BELEGT (Verteron, 2×):** `34 36`, Template 1200039 (B5). Templates je Zone verschieden. | Altgard/Eltnen/Morheim-Templates sammeln |
-| 2 | Sende-Radius | **≈ 10.500 Einheiten planar (≈ 105 m), 2 Messungen (B8)** | mehr Sichtungen; Austrittsradius (F7-Test) |
+| 1 | Kommen Cubes als Entity? | **Ja, BELEGT (Verteron, 5 Cubes):** `34 36`, Templates 1200039 und 1200041 (B5, B9). Templates je Zone und Variante verschieden. | Altgard/Eltnen/Morheim-Templates sammeln |
+| 2 | Sende-Radius | **≈ 9.700–10.500 Einheiten planar (≈ 100 m), 4 Messungen (B8)** | mehr Sichtungen; Austrittsradius (F7-Test) |
 | 3 | Despawn/Geöffnet | **BELEGT (2×):** `38 36` → `3a 36` (+4,25 s) → `35 36` Grund `04` (B6) | Grund `01` bei Cubes (außer Sicht) prüfen; fremde Öffnungen |
 | 4 | Eigene Position | **BELEGT (Phase 2):** `2a 38`, `2b 38`, `02 38` (wir als Ziel), `0e 38`, nur ereignisgebunden. Fallback Ring-Fix (P1–P6) | `21 36`/`23 36` bei Zonenwechsel prüfen; Positions-Ping testen |
 | 5 | Zonenweiter Hinweis | Nichts gefunden (Recherche) | In Phase 1 mitprüfen |
 
-**Abbruchkriterium:** greift **nicht**. Cubes kommen aus ≈ 105 m Entfernung über die Leitung (B8), weit jenseits der
+**Abbruchkriterium:** greift **nicht**. Cubes kommen aus ≈ 100 m Entfernung über die Leitung (B8), weit jenseits der
 Interaktionsreichweite (≈ 2 m, B7).
 
 ## Quellen
@@ -325,3 +367,8 @@ Interaktionsreichweite (≈ 2 m, B7).
   - Ein Cube, der nicht wieder gesendet wird, obwohl man nah dran ist, gilt als „weg“.
   - Getestet per Replay von `20261013_114345` (beide Cubes, Status bis „geöffnet von dir“) und 20 s live.
   - Die Abnahme im Spiel steht aus. Offen ist dabei auch die Nordachse (−Y laut Cube Watch).
+- **2026-10-13 (Phase 3 abgenommen):** Rückmeldung: „jeder Cube wurde gut erkannt und hat mir eine Warnung gegeben“.
+  Sitzung `radar_20261013_122710`: 3 Cubes, einer von Spieler 9019 und zwei von dir geöffnet.
+  - Neu: B9 (Template 1200041), B10 (`created` = Spawn), B11, P7 (eigene Position aus `21 36`/`23 36`, Map 1010).
+  - Radar: Höhenanzeige (▲/■/▼, Höhenleiste, „über/unter dir“), Spur-Unterbrechung bei Teleports, Ruhezeit für
+    Radius-Stichproben. Der erste Map-Load leert nur Cubes einer anderen Zone.

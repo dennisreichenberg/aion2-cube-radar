@@ -2,8 +2,9 @@
   "_doc": "Hidden Cube signature. A cube is a 34 36 object spawn whose template is listed here. status: verified = seen in our own captures (docs/FINDINGS.md); hypothesis = third-party source only.",
   "templates": {
     "1200039": { "zone": "Verteron", "status": "verified",   "evidence": "2026-10-13 captures/20261013_114345: 2 cubes opened with a key, positions equal th.gl Verteron cube spots; fixtures/cubes/2026-10-13_verteron_two_cubes.json" },
+    "1200041": { "zone": "Verteron", "status": "verified",   "evidence": "2026-10-13 captures/radar_20261013_122710: opened with the key (3a 36 tail 0x259AC523), position equals th.gl spot hidden_cube@99276:70962 (0 units, same z); spawned 1 s before it was seen" },
     "1301199": { "zone": "Altgard?", "status": "hypothesis", "evidence": "Cube Watch (template 0x0013DACF); its test vector position equals a th.gl Altgard cube spot" }
   },
   "open_done_item": { "value": 630900003, "hex": "0x259AC523", "status": "hypothesis", "note": "3a 36 tail on both cube openings (count 1 + this item, presumably the consumed Hidden Cube Key); same bytes in Cube Watch's real capture" },
-  "send_radius_units": { "enter_planar": 10500, "status": "measured, 2 samples", "note": "first 34 36 at 10,395 / 10,548 units planar (interpolated own position); leave radius for cubes not yet measured" }
+  "send_radius_units": { "enter_planar": 10000, "status": "measured, 4 samples", "note": "first 34 36 at 9,681 / 9,680 / 10,395 / 10,548 units planar; leave radius for cubes not yet measured" }
 }

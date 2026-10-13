@@ -4,6 +4,7 @@
     "heartbeat":      "0036",
     "self_info":      "3336",
     "map_load":       "2136",
+    "teleport":       "2336",
     "object_spawn":   "3436",
     "object_removed": "3536",
     "open_start":     "3836",
@@ -19,6 +20,7 @@
     { "kind": "object_spawn", "within_s": 300, "hint": "no object spawns for 5 min although moving? the 34 36 opcode may have moved" },
     { "kind": "pos_buff_a",   "within_s": 600, "hint": "no position records for 10 min: 2a 38 may have moved" }
   ],
+  "map_zones": { "1010": "Verteron" },
   "north": "-y",
   "fix_fresh_s": 5,
   "keep_out_of_view_min": 30,
