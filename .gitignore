@@ -19,3 +19,6 @@ __pycache__/
 
 # Third-party data (unclear license), local use only
 data/external/
+
+# Test packages
+dist/

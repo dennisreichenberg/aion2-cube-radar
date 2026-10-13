@@ -1,0 +1,48 @@
+Cube Radar fuer Aion 2 (Global) - Testversion
+=============================================
+
+Was ist das?
+  Ein Windows-Programm, das den Netzwerkverkehr von Aion 2 passiv mitliest (wie Wireshark) und im Browser
+  anzeigt, wo gerade Hidden Cubes stehen: Entfernung, Richtung, Status. Es liest keinen Speicher, veraendert
+  nichts am Spiel und sendet nichts. Die Weboberflaeche laeuft nur lokal auf 127.0.0.1.
+
+  ACHTUNG: Laut einem anderen Tool-Autor stuft der NCSOFT-Support Software, die Spieldaten mitliest, als
+  Verstoss gegen die Nutzungsbedingungen ein. Die Nutzung erfolgt auf eigenes Risiko.
+
+Voraussetzungen
+  - Windows 10/11 (64 Bit)
+  - Npcap, kostenlos von https://npcap.com (Installer mit den Standardoptionen ausfuehren).
+    Falls bei der Installation "Restrict Npcap driver's access to Administrators only" angehakt wurde:
+    "Radar starten.cmd" per Rechtsklick "Als Administrator ausfuehren".
+  - Aion 2 Global
+
+Starten
+  1. ZIP in einen normalen Ordner entpacken (z. B. Dokumente\cuberadar), nicht direkt aus dem ZIP starten.
+  2. "Radar starten.cmd" doppelklicken. Windows SmartScreen meldet evtl. eine unbekannte App:
+     "Weitere Informationen" -> "Trotzdem ausfuehren".
+  3. Der Browser oeffnet http://127.0.0.1:5313. Oben "Ton an" klicken (und optional "Hinweise an").
+  4. Aion 2 starten bzw. einloggen. Kopfzeile pruefen: Capture "laeuft", "Ich" zeigt eine Nummer.
+     Steht bei Position "unbekannt": im Spiel einmal einen Buff auf dich selbst wirken.
+  Beenden: im schwarzen Konsolenfenster q eintippen und Enter.
+
+Testauftrag (ca. 15-20 Minuten in Verteron oder Altgard)
+  1. In ein Gebiet mit vielen Cube-Spots laufen.
+  2. Wenn das Radar piept: Entfernung und Richtung in der Liste merken. Erst wenn du den Cube im Spiel
+     WIRKLICH siehst: Strg+Umschalt+F5 druecken.
+  3. In die angezeigte Richtung laufen (zwischendurch kurz stehen bleiben oder einen Buff wirken, das
+     aktualisiert deine Position). Stimmt die Richtung nicht mit der Minimap ueberein (gespiegelt oder
+     um 90 Grad gedreht), oben bei "Norden" umstellen, bis es passt, und die passende Einstellung notieren.
+  4. Cube oeffnen und Strg+Umschalt+F6 druecken.
+  5. Mindestens 2 Cubes so testen. Optional: einen Cube stehen lassen, weglaufen, bis er verschwindet,
+     dann Strg+Umschalt+F7.
+
+  Hinweis Altgard/Asmodier: Dort ist die Cube-Kennung noch nicht an eigenen Daten bestaetigt. Spaetestens
+  nachdem du dort einen Cube mit Key geoeffnet hast, lernt das Radar sie und zeigt die folgenden an.
+
+Rueckmeldung
+  - Kurz notieren: Cube vor dem Sehen angezeigt? An der angezeigten Stelle gefunden? Welche "Norden"-Einstellung?
+  - Den Ordner captures\radar_<datum_zeit> (liegt neben dem Programm) zippen und zurueckschicken.
+    Er enthaelt deinen mitgeschnittenen Spielverkehr inkl. Charakternamen und Chat: nur an Vertrauenspersonen geben.
+
+Lizenz
+  GPL-3.0 (siehe LICENSE). Teile stammen aus cyberbadger6969/aion2-dps-meter. Quelltext: source.zip.
