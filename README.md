@@ -3,7 +3,7 @@
 Passives Werkzeug für Aion 2 (Global). Es liest per Npcap den Server→Client-Traffic mit, wie Wireshark, und soll
 live anzeigen, wo gerade Hidden Cubes stehen. Es betreibt kein Memory-Reading und keine Injection und sendet nichts.
 
-Stand: **Phase 0**. Der Frame-Dumper und die Analyse-Grundlagen sind fertig. Alle Erkenntnisse stehen in
+Stand: **Phase 1 läuft**. Der Hidden Cube ist in Verteron identifiziert (Template 1200039), der Sende-Radius liegt bei ≈ 105 m. Alle Erkenntnisse stehen in
 [`docs/FINDINGS.md`](docs/FINDINGS.md).
 
 ## Aufbau
@@ -13,8 +13,9 @@ Stand: **Phase 0**. Der Frame-Dumper und die Analyse-Grundlagen sind fertig. All
 | `src/CubeRadar.Core` | Capture (Npcap/SharpPcap), Flow-Erkennung, TCP-Reassembly, Framing/LZ4 (abgeleitet von cyberbadger6969/aion2-dps-meter, GPL-3.0), pcapng-Writer, JSONL-Dump, Census |
 | `src/CubeRadar.Cli` | `cuberadar`: `dump live`, `dump <datei>`, `census`, `devices`, `conns`; Marker per globalem Hotkey oder Konsole |
 | `tests/CubeRadar.Tests` | xunit: synthetische Framing-Tests, pcapng-Roundtrip, echte Stream-Fixtures |
-| `tools/` | Python (nur Stdlib): `a2wire.py` (unabhängiger Decoder), `census.py`, `crosscheck.py`, `make_fixture.py` |
+| `tools/` | Python (nur Stdlib): `a2wire.py` (unabhängiger Decoder), `census.py`, `crosscheck.py`, `make_fixture.py`, `objects.py` (Objekt-Lebenszyklus je Template), `radius.py` (Eigenposition, Sende-Radius) |
 | `config/opcodes.json` | Opcode-Namen inkl. Belegstatus, damit Patches ohne Code-Änderung abgefangen werden können |
+| `config/cubes.json` | Cube-Signatur: Templates je Zone, Öffnungs-Item, gemessener Sende-Radius |
 | `fixtures/` | echte Stream-Ausschnitte (Hex) mit erwarteten Frames |
 | `captures/` | Aufnahmen (nicht im Git) |
 | `ref/` | Referenz-Repos (nur gelesen, nicht im Git) |

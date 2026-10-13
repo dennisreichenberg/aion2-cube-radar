@@ -57,6 +57,72 @@ Build 25800038). Der Mitschnitt begann mitten im Stream, ohne SYN.
   (698 Byte), darin 31 innere Frames (u. a. `84 56`, `04 38`, `a6 ff`, `1e 56`, `04 8d`). Verschachtelungstiefe 1.
 - Bundles kommen selten: 1 Bundle in 24,8 s. Eingebettete Bundles in Packet-Bodies: 0.
 
+### B5. Hidden Cube = Objekt-Spawn `34 36` mit Template **1200039** (Verteron) (2026-10-13)
+Quelle: `captures/20261013_114345` (317 s, Verteron, Build 25800038, 0 Resyncs/Lücken). Du hast zwei Cubes mit Key
+geöffnet. Fixture: `fixtures/cubes/2026-10-13_verteron_two_cubes.json`, Test `CubeFixtureTests`.
+
+```
+cube 1: e5 ff 03 | 04 00 | a7 4f 12 00 | 00 1d 44 c7  80 a5 f6 47  00 64 71 46 | 00 00 00 00 | 00 00 00 00 | 01 01 01 |
+        aa e4 a5 34 a1 01 00 00 | 00 x10 | 2c 4d 45 02 07 00 00
+cube 2: 86 8d 02 | 04 00 | a7 4f 12 00 | a0 b4 47 c7  b2 6c 03 48  00 de 96 46 | 00 00 00 00 | 00 24 90 43 | 01 01 01 |
+        4a b6 a7 34 a1 01 00 00 | 00 x10 | 2c 4d 45 02 07 00 00
+```
+(Body ohne Opcode.) Layout: `id varint | kind u16 (04 00) | template u32 | x y z f32 | f32 | heading f32 |
+3 Byte | created u64 ms | …`.
+- Cube 1: id 65509, (−50205,0 / 126283,0 / 15449,0), Heading 0. Cube 2: id 34438, (−51124,6 / 134578,8 / 19311,0),
+  Heading 288,3.
+- **Unabhängige Bestätigung:** Beide Positionen liegen in x/y **exakt** (0 Einheiten Abstand) auf th.gl-Cube-Spots in
+  Verteron: `hidden_cube@126283:-50205` und `hidden_cube@134579:-51125` (z liegt 47 bzw. 21 Einheiten über dem Spot).
+  Kein Objekt anderer Templates kommt in den drei Mitschnitten näher als 460 Einheiten an einen der 3.722 Spots.
+- Das Cube-Watch-Template 1301199 (`0x0013DACF`) kam in keinem Mitschnitt vor. Es gehört laut th.gl-Abgleich zu Altgard.
+  **Die Cube-Templates unterscheiden sich also je Zone.** Eltnen und Morheim sind noch unbekannt (`config/cubes.json`).
+- `created` (Hypothese aus O1): Cube 1 entstand 161 s und Cube 2 54 s vor der ersten Sichtung. Beide existierten
+  also schon, als sie gemeldet wurden. Ob der Zeitstempel wirklich den Respawn markiert, ist noch offen.
+
+### B6. Öffnen und Entfernen eines Cubes (2026-10-13, 2×)
+```
+38 36  e5 ff 03 dc 47 01                         Öffnen beginnt: Objekt 65509, Akteur 9180 (= eigener Charakter), 01
+3a 36  e5 ff 03 dc 47 01 00 00 00 23 c5 9a 25    fertig nach 4,25 s: count 1, item 0x259AC523
+1e 56  (im LZ4-Bundle, +46 ms) 01 e5 ff 00 00 | Objekt-xyz | Drop-xyz | … | item u32 | count u32 | …
+35 36  e5 ff 03 04 03 00                         entfernt, Grund 04
+1f 56  (im LZ4-Bundle, +1 s) 01 e5 ff 00 00 | u32 | drop-id u32 | …
+```
+- Beim zweiten Cube ist der Ablauf identisch (4,25 s; dasselbe `01 00 00 00 23 c5 9a 25`).
+- Der `3a 36`-Abschluss `01 00 00 00 23 c5 9a 25` ist byte-identisch mit Cube Watchs echtem Cube-Vektor (Altgard).
+  Andere geöffnete Objekte (Sammelpunkte) enden auf `00 …` bzw. `01/02/03 00 00 00 00 00 00 00`. HYPOTHESE: count 1 +
+  Item 0x259AC523 ist der verbrauchte Hidden Cube Key.
+- Loot `1e 56`: 7 bzw. 9 Einträge mit Cube-ID und Cube-Position. Unter den Mengen sind **1000, 5, 120 und 10**. Das
+  passt zu den laut Recherche garantierten Belohnungen (1.000 Seelenkristalle, 5 Soul Codex, 100–200 Power Shards,
+  10 Silentium).
+
+### B7. Eigene Position über `2a 38` (2026-10-13)
+- Regel (Cube Watch): Der Body endet mit `entity varint (= die erste id) | 01 00 | x y z f32`. In der Sitzung gab es
+  26 Treffer für die eigene id 9180, also etwa einen alle 2–15 s.
+- Beleg: Beim Öffnen der Cubes lag die letzte Positionsangabe davor **195 bzw. 234 Einheiten** vom Cube entfernt
+  (2,7 bzw. 1,3 s vor Öffnungsbeginn). Bei 1 Einheit = 1 cm sind das etwa 2 m. Das passt zur Interaktionsreichweite
+  und stützt die Einheit cm.
+- Die Regel trifft gelegentlich auch auf fremde ids zu (5471 2×, 12390 3×). Die eigene id ist die mit den meisten
+  Treffern, besser noch die aus `33 36`.
+- Die eigene Entity-ID war in allen drei Sitzungen 9180 (11:27, 11:41, 11:43 Uhr).
+
+### B8. Sende-Radius für Cubes: ≈ 10.500 Einheiten in der Ebene (≈ 105 m) (2026-10-13, 2 Messungen)
+Die Position zum Zeitpunkt des ersten `34 36` ist linear zwischen den benachbarten `2a 38`-Angaben interpoliert
+(`tools/radius.py`):
+
+| Cube | erste Meldung | letzte Position davor | erste Position danach | interpoliert 2D / 3D |
+|---|---|---|---|---|
+| 65509 | 11:46:50.211 | −14,2 s: 13.454 | +0,2 s: 10.363 | **10.395** / 10.663 |
+| 34438 | 11:47:02.412 | −2,5 s: 13.738 | +1,8 s: 8.602 | **10.548** / 11.178 |
+
+- Die 2D-Werte liegen enger beieinander als die 3D-Werte. Vermutlich prüft der Server also eine planare Distanz.
+- Andere Objekte haben eigene Radien, je Template unterschiedlich (Median Eintritt/Austritt):
+  - viele 12xxxxx und 1500004: ≈ 5.000 / 6.500
+  - 1500000: ≈ 10.300 / 11.900 (dieselbe Klasse wie die Cubes)
+  - 1100001: ≈ 24.000 / –
+  
+  Cube Watchs „~15.000“ passt nicht zu unseren Werten.
+- Offen: der Austrittsradius bei Cubes (`35 36` Grund `01`). Es gab noch keine Cube-Sichtung ohne Öffnen.
+
 ## BEOBACHTET (strukturell, noch nicht gezielt geprüft)
 
 Gleicher Mitschnitt `captures/20261013_112703`.
@@ -88,8 +154,8 @@ Gleicher Mitschnitt `captures/20261013_112703`.
 ### O3. Interaktion `38 36` → Entfernung mit Grund `04`
 `0c 38 36 a3 d8 01 d6 19 01` → Objekt 27683, Akteur 3286, `01`. Dasselbe Objekt 27683 wurde später per `35 36` mit
 Grund **`04`** entfernt. Das passt zu Cube Watchs Lesart „geöffnet/zerstört“. Das Objekt selbst kam vor
-Mitschnittbeginn (Template unbekannt). Akteur 3286 ist vermutlich der eigene Charakter, aber unbestätigt, weil
-`33 36` im Mitschnitt fehlte.
+Mitschnittbeginn (Template unbekannt). Akteur 3286 war **nicht** der eigene Charakter (eigene id = 9180, siehe B7),
+sondern ein anderer Spieler. Bestätigt durch B6.
 
 ### O4. NPC-Spawn `41 36` passt zum Layout von TheLoop
 ```
@@ -109,11 +175,11 @@ Mitschnittbeginn (Template unbekannt). Akteur 3286 ist vermutlich der eigene Cha
 
 | Opcode | Bedeutung | Layout | Quelle | Status |
 |---|---|---|---|---|
-| `34 36` | Objekt-Spawn, **Hidden Cube = Template `0x0013DACF` (1301199)** | id varint, 2 B, template u32, x y z f32, … | Cube Watch (README, `proto/proto.v`, Testvektoren aus echten Captures) | Layout beobachtet (O1), Cube-Template HYPOTHESE |
-| `35 36` | Objekt entfernt: `04` zerstört/geöffnet, `01` außer Sicht | id varint, reason u8 | Cube Watch | beobachtet (O2/O3) |
-| `38 36` / `3a 36` | Öffnen beginnt / ist fertig | objekt-id varint, spieler-id varint, … | Cube Watch | `38 36` beobachtet (O3) |
-| `1e 56` | Loot aus geöffnetem Objekt | …, objekt-id u32, objekt-xyz, drop-xyz | Cube Watch | gesehen, Layout ungeprüft |
-| `2a 38` / `2b 38` | eigene Position (bei anderen Repos „Buff“): id, …, id, `01 00`/`01 02`, x y z | | Cube Watch; NOIA2/Kuroukihime nennen es Buff | HYPOTHESE |
+| `34 36` | Objekt-Spawn; Hidden Cube Verteron = Template 1200039, Altgard laut Cube Watch = 1301199 (`0x0013DACF`) | id varint, kind u16, template u32, x y z f32, f32, heading f32, 3 B, created u64, … | Cube Watch; eigene Mitschnitte | **BELEGT** für Verteron (B5); 1301199 HYPOTHESE |
+| `35 36` | Objekt entfernt: `04` zerstört/geöffnet, `01` außer Sicht | id varint, reason u8 | Cube Watch; eigene Mitschnitte | `04` **BELEGT** für Cubes (B6), `01` bei anderen Objekten beobachtet |
+| `38 36` / `3a 36` | Öffnen beginnt / ist fertig | objekt varint, akteur varint, `01` / count u32, item u32 | Cube Watch; eigene Mitschnitte | **BELEGT** (B6) |
+| `1e 56` | Loot aus geöffnetem Objekt | `01`, objekt u32, objekt-xyz, drop-xyz, …, item u32, count u32, … | Cube Watch; eigene Mitschnitte | beobachtet (B6) |
+| `2a 38` / `2b 38` | Position (bei anderen Repos „Buff“): id, …, id, `01 00`/`01 02`, x y z | | Cube Watch; NOIA2/Kuroukihime nennen es Buff | `2a 38` **BELEGT** als Eigenposition (B7), `2b 38` HYPOTHESE |
 | `1a 37` | Entity-Position: id, 2 B, x y z | | HamMeter `main`, Cube Watch | HYPOTHESE |
 | `1b 37` | Bewegung: id, flags u8, x y z | | HamMeter `main` | HYPOTHESE |
 | `02 38` kind 2 | Cast mit Heading + Caster-xyz | | TheLoop (Fixture `wb-cast-kind2-position`) | COMMUNITY |
@@ -121,8 +187,8 @@ Mitschnittbeginn (Template unbekannt). Akteur 3286 ist vermutlich der eigene Cha
 | `41 36` | NPC-Spawn, kind `0c/0d` NPC, `04/05` „andere Objekte“, `1c/1d/1f/5d/5f` Summons | | alle Meter; Kinds laut HamMeter-Doku | Layout beobachtet (O4) |
 | `42 36` | Tod/Entfernt: id, 0, flag (1 tot geladen/entfernt, 3 im Kampf gestorben, 7 aus der Welt) | | cyberbadger, HamMeter-Doku | COMMUNITY |
 
-**Sichtweite (Interest-Radius):** Cube Watch: Cubes werden ab „etwa 15.000 Einheiten“ angekündigt. Bei 1 Einheit = 1 cm
-wären das 150 m. Das ist eine HYPOTHESE und wird in Phase 1 gemessen.
+**Sichtweite (Interest-Radius):** Cube Watch nennt „etwa 15.000 Einheiten“. Unsere Messung (B8) ergibt ≈ 10.500 in der
+Ebene.
 
 **Kartenachsen (Cube Watch):** Norden = Welt −Y, Osten = Welt +X. Ebenfalls eine HYPOTHESE.
 
@@ -142,14 +208,14 @@ wären das 150 m. Das ist eine HYPOTHESE und wird in Phase 1 gemessen.
 
 | # | Frage | Stand | Nächster Schritt |
 |---|---|---|---|
-| 1 | Kommen Cubes als Entity? | HYPOTHESE `34 36` Template 1301199. Das `34 36`-Layout ist an eigenen Daten bestätigt. | Phase 1: Aufnahme in Verteron/Altgard mit Markern |
-| 2 | Sende-Radius | HYPOTHESE ~15.000 Einheiten. Objekte kommen und gehen beim Laufen (O2). | Phase 1: Distanz bei erstem `34 36` bzw. bei `35 36` Grund `01` gegen die Eigenposition |
-| 3 | Despawn/Geöffnet | `35 36` Grund `04` nach `38 36` beobachtet (O3) | Phase 1: Marker „geöffnet“ |
-| 4 | Eigene Position | Kandidaten `2a 38`/`2b 38`, `1a 37`, `1b 37`, `02 38` kind 2, `21 36`. Alle außer `21 36` kamen im Mitschnitt vor. | Phase 2 |
+| 1 | Kommen Cubes als Entity? | **Ja, BELEGT (Verteron, 2×):** `34 36`, Template 1200039 (B5). Templates je Zone verschieden. | Altgard/Eltnen/Morheim-Templates sammeln |
+| 2 | Sende-Radius | **≈ 10.500 Einheiten planar (≈ 105 m), 2 Messungen (B8)** | mehr Sichtungen; Austrittsradius (F7-Test) |
+| 3 | Despawn/Geöffnet | **BELEGT (2×):** `38 36` → `3a 36` (+4,25 s) → `35 36` Grund `04` (B6) | Grund `01` bei Cubes (außer Sicht) prüfen; fremde Öffnungen |
+| 4 | Eigene Position | `2a 38` **BELEGT** (B7), aber nur alle 2–15 s. Weitere Kandidaten: `1a 37`, `1b 37`, `02 38` kind 2, `21 36` | Phase 2 |
 | 5 | Zonenweiter Hinweis | Nichts gefunden (Recherche) | In Phase 1 mitprüfen |
 
-**Abbruchrisiko (Phase 1):** Gering. Cube Watch meldet Cubes aus ~15.000 Einheiten Entfernung, weit jenseits der
-Interaktionsreichweite. Das ist an unseren Daten aber noch nicht belegt.
+**Abbruchkriterium:** greift **nicht**. Cubes kommen aus ≈ 105 m Entfernung über die Leitung (B8), weit jenseits der
+Interaktionsreichweite (≈ 2 m, B7).
 
 ## Quellen
 
@@ -178,3 +244,9 @@ Interaktionsreichweite. Das ist an unseren Daten aber noch nicht belegt.
 - **2026-10-13 (Phase 0):** Setup, Recherche, `cuberadar dump` (live/pcapng), unabhängiger Python-Decoder, erste
   Live-Aufnahme `20261013_112703`. Belege B1–B4, Beobachtungen O1–O5, Fixtures `2026-10-13_bundle_objects` und
   `2026-10-13_spawns`.
+- **2026-10-13 (Phase 1, erste Aufnahme):** `20261013_114345` in Verteron, 2 Cubes geöffnet.
+  - Belege B5–B8: Cube-Template 1200039, Öffnen und Entfernen, Eigenposition `2a 38`, Radius ≈ 10.500.
+  - Neu: `config/cubes.json`, `ObjectMessages` (C#), Fixture `fixtures/cubes/2026-10-13_verteron_two_cubes.json`,
+    `tools/objects.py`, `tools/radius.py`.
+  - Der einzige Marker dieser Aufnahme war `cube_opened` (F6) um 11:47:10.8, nicht F5. Für die Auswertung war er
+    nicht nötig.
