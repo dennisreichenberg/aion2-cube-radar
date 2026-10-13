@@ -48,6 +48,18 @@ internal static class RadarCommand
             return 2;
         }
 
+        // One live radar at a time: a second one would fight over hotkeys, the web port and the capture.
+        using var instance = new Mutex(initiallyOwned: true, @"Local\CubeRadar.LiveRadar", out var firstInstance);
+        if (replay is null && !firstInstance)
+        {
+            const string running = "Cube Radar läuft bereits.\n\nBeenden: Rechtsklick auf das Radar-Symbol unten rechts in der Taskleiste → „Beenden“ " +
+                                   "(oder ⚙ im Overlay → „Radar beenden“).";
+            Console.Error.WriteLine(running);
+            if (overlayOnly) System.Windows.Forms.MessageBox.Show(running, "Cube Radar", System.Windows.Forms.MessageBoxButtons.OK,
+                System.Windows.Forms.MessageBoxIcon.Information);
+            return 3;
+        }
+
         var cfg = RadarConfig.Load(Path.Combine(root, "config"), root);
         var spots = SpotIndex.TryLoad(cfg.SpotsCsv);
         var settings = RadarSettings.Load(Path.Combine(root, "data", "settings.json"));
