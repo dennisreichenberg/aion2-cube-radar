@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CubeRadar.Cli/CubeRadar.Cli.csproj" />
+    <Project Path="src/CubeRadar.Core/CubeRadar.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CubeRadar.Tests/CubeRadar.Tests.csproj" />
+  </Folder>
+</Solution>

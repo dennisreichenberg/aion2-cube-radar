@@ -1,0 +1,19 @@
+# Reference repos (read-only clones, not part of this project)
+ref/
+# Raw captures and dumps (large, personal traffic)
+captures/
+*.pcap
+*.pcapng
+# Build output
+bin/
+obj/
+*.user
+.vs/
+__pycache__/
+*.pyc
+# Local runtime data
+*.db
+*.sqlite
+
+# Third-party data (unclear license), local use only
+data/external/

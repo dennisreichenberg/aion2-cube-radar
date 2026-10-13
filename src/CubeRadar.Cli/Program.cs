@@ -1,0 +1,242 @@
+using System.Globalization;
+using CubeRadar.Cli;
+using CubeRadar.Core.Capture;
+using CubeRadar.Core.Dump;
+using CubeRadar.Core.Protocol;
+
+// aion2-cube-radar developer tool. Strictly passive: reads packets through Npcap, never sends or alters anything.
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+Console.OutputEncoding = System.Text.Encoding.UTF8;
+
+var book = OpcodeBook.LoadDefault();
+
+try
+{
+    return args.FirstOrDefault() switch
+    {
+        "devices" => Devices(),
+        "conns" => Connections(),
+        "dump" when args.Length > 1 && args[1] == "live" => DumpLive(args[2..]),
+        "dump" when args.Length > 1 => DumpFile(args[1], args[2..], writeJsonl: true),
+        "census" when args.Length > 1 => DumpFile(args[1], args[2..], writeJsonl: false),
+        "--version" => Print(DumpSession.Version),
+        _ => Usage(),
+    };
+}
+catch (FormatException ex)
+{
+    Console.Error.WriteLine(ex.Message);
+    return 2;
+}
+
+int Usage()
+{
+    Console.WriteLine($"""
+        cuberadar {DumpSession.Version} - passive AION 2 frame dumper (Npcap)
+
+        cuberadar devices                          list Npcap adapters
+        cuberadar conns                            the AION 2 processes and their TCP connections
+        cuberadar dump live [options]              capture live into captures/<date_time>/:
+                                                   raw.pcapng, frames.jsonl, markers.jsonl, census.json/.txt
+            --out DIR          session root (default: <project>/captures)
+            --device NAME      force an Npcap adapter (see 'devices'); default: the one carrying the game
+            --seconds N        stop after N seconds (default: until 'q' or Ctrl+C)
+            --hotkeys SPEC     marker hotkeys, default:
+                               {GlobalHotkeys.DefaultSpec}
+            --no-hotkeys       console markers only
+            --no-beep          no confirmation beep for markers
+            --no-heartbeat     leave heartbeat frames out of frames.jsonl (still counted)
+            --no-embedded      do not look for LZ4 bundles inside packet bodies
+        cuberadar dump <file.pcap|.pcapng> [--out DIR] [--markers FILE] [--no-heartbeat] [--no-embedded]
+                                                   decode a recording into <name>.replay.jsonl + census;
+                                                   markers.jsonl next to the file is merged automatically
+        cuberadar census <file.pcap|.pcapng>       opcode census and stream health only
+
+        Console during 'dump live': Enter = marker (text optional), 1-5 = the hotkey markers, q = stop.
+        """);
+    return 1;
+}
+
+int Print(string s)
+{
+    Console.WriteLine(s);
+    return 0;
+}
+
+int Devices()
+{
+    foreach (var (name, desc) in LiveSniffer.ListDevices()) Console.WriteLine($"{desc,-60} {name}");
+    return 0;
+}
+
+int Connections()
+{
+    var pids = GameProcessLocator.FindGameProcessIds();
+    Console.WriteLine($"AION 2 processes: {(pids.Length == 0 ? "none" : string.Join(", ", pids))}");
+    foreach (var c in GameProcessLocator.FindConnections(pids))
+        Console.WriteLine($"  {c.LocalIp}:{c.LocalPort} -> {c.RemoteIp}:{c.RemotePort}{(c.RemotePort == StreamTracker.GamePort ? "  (game port)" : "")}");
+    return 0;
+}
+
+int DumpFile(string path, string[] a, bool writeJsonl)
+{
+    if (!File.Exists(path))
+    {
+        Console.Error.WriteLine($"not found: {path}");
+        return 2;
+    }
+    var options = ParseDumpOptions(a);
+    var dir = Opt(a, "--out") ?? Path.GetDirectoryName(Path.GetFullPath(path))!;
+    Directory.CreateDirectory(dir);
+    var stem = Path.GetFileNameWithoutExtension(path);
+    var jsonl = writeJsonl ? Path.Combine(dir, stem + ".replay.jsonl") : null;
+    var census = Path.Combine(dir, stem + ".replay.census.json");
+
+    using var session = new DumpSession(book, options, jsonl);
+    session.Jsonl?.Session("file", Path.GetFullPath(path), DumpSession.Version);
+    var markerFile = Opt(a, "--markers") ?? Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!, "markers.jsonl");
+    if (File.Exists(markerFile))
+    {
+        var markers = DumpSession.ReadMarkerLog(markerFile);
+        session.QueueReplayMarkers(markers);
+        Console.WriteLine($"markers: {markers.Count} from {markerFile}");
+    }
+    session.FlowLocked += f => Console.WriteLine($"game stream {f.Id}: {f.Key}{(f.Aligned ? " (from SYN)" : " (joined mid-stream)")}");
+
+    var packets = CaptureFileSource.ReadAll(path, raw => session.OnPacket(raw, "file"));
+    var report = session.Finish(census);
+    Console.WriteLine($"{packets:N0} packets read");
+    Console.WriteLine(report);
+    File.WriteAllText(Path.ChangeExtension(census, ".txt"), report);
+    if (jsonl is not null) Console.WriteLine($"frames: {jsonl}");
+    Console.WriteLine($"census: {census}");
+    return 0;
+}
+
+int DumpLive(string[] a)
+{
+    if (!LiveSniffer.IsNpcapInstalled())
+    {
+        Console.Error.WriteLine("Npcap is not installed (https://npcap.com).");
+        return 2;
+    }
+    var options = ParseDumpOptions(a);
+    var root = Opt(a, "--out") ?? Path.Combine(ProjectRoot(), "captures");
+    var dir = Path.Combine(root, DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+    Directory.CreateDirectory(dir);
+    var seconds = Opt(a, "--seconds") is { } s ? int.Parse(s, CultureInfo.InvariantCulture) : 0;
+    var beep = !a.Contains("--no-beep");
+    var bindings = a.Contains("--no-hotkeys") ? [] : GlobalHotkeys.Parse(Opt(a, "--hotkeys") ?? GlobalHotkeys.DefaultSpec);
+
+    using var session = new DumpSession(book, options,
+        Path.Combine(dir, "frames.jsonl"), Path.Combine(dir, "raw.pcapng"), Path.Combine(dir, "markers.jsonl"));
+    session.Jsonl!.Session("live", Opt(a, "--device") ?? "auto", DumpSession.Version);
+    session.FlowLocked += f => Log($"game stream {f.Id}: {f.Key}{(f.Aligned ? " (from SYN)" : " (joined mid-stream)")}");
+
+    using var sniffer = new LiveSniffer(new LiveSnifferOptions { DeviceName = Opt(a, "--device") });
+    sniffer.PacketArrived += (raw, dev) => session.OnPacket(raw, dev.Name, LiveSniffer.Describe(dev));
+    sniffer.StatusChanged += st => Log(st + (sniffer.Filter is { } f ? $" · filter: {f}" : ""));
+
+    using var stop = new ManualResetEventSlim();
+    Console.CancelKeyPress += (_, e) =>
+    {
+        e.Cancel = true;
+        stop.Set();
+    };
+
+    void Mark(string label, string? text, string via, int tone)
+    {
+        var m = new Marker(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), label, text, via);
+        session.AddMarker(m);
+        Log($"MARKER {label}{(string.IsNullOrEmpty(text) ? "" : $" \"{text}\"")} ({via})");
+        if (beep) Task.Run(() => Console.Beep(tone, 150));
+    }
+
+    int[] tones = [880, 660, 440, 990, 550];
+    using var hotkeys = bindings.Count == 0 ? null : new GlobalHotkeys(bindings, b =>
+    {
+        var i = bindings.IndexOf(b);
+        Mark(b.Label, null, "hotkey", tones[i % tones.Length]);
+    });
+
+    Console.WriteLine($"session: {dir}");
+    if (hotkeys is not null)
+        foreach (var (b, ok, err) in hotkeys.Results)
+            Console.WriteLine($"  hotkey {b.Display,-16} → {b.Label,-18} {(ok ? "ok" : $"NOT registered (error {err}, taken by another program?)")}");
+    Console.WriteLine("  console: Enter = marker (text optional), 1-5 = hotkey markers, q = stop");
+
+    var console = new Thread(() =>
+    {
+        while (!stop.IsSet)
+        {
+            var line = Console.ReadLine();
+            if (line is null) return; // stdin closed
+            line = line.Trim();
+            if (line is "q" or "quit" or "/q")
+            {
+                stop.Set();
+                return;
+            }
+            if (line.Length == 1 && line[0] is >= '1' and <= '9' && line[0] - '1' < bindings.Count)
+            {
+                var i = line[0] - '1';
+                Mark(bindings[i].Label, null, "console", tones[i % tones.Length]);
+            }
+            else Mark("note", line.Length == 0 ? null : line, "console", 770);
+        }
+    }) { IsBackground = true, Name = "console" };
+    console.Start();
+
+    sniffer.Start();
+    var started = DateTime.UtcNow;
+    var lastStats = DateTime.UtcNow;
+    while (!stop.Wait(5_000))
+    {
+        var line = session.Read(x =>
+        {
+            var c = x.Census;
+            long Count(ushort op) => c.Ops.TryGetValue(op, out var st) ? st.Count : 0;
+            var flows = x.Tracker.GameFlows;
+            return $"packets {x.Packets:N0} · streams {flows.Count} · frames {c.Frames:N0} · hb {c.HeartbeatRate:N1}/s · " +
+                   $"spawn 41 36: {Count(0x4136)} · 34 36: {Count(0x3436)} · bundles {c.BundlesOk:N0} (bad {c.BundlesBad}) · " +
+                   $"resyncs {flows.Sum(f => f.Decoder.Resyncs)} · gaps {flows.Sum(f => f.Reassembler.Gaps)} · markers {c.Markers}";
+        });
+        var health = sniffer.Health();
+        Log(line + (health is { } h ? $" · npcap drops {h.Dropped}" : ""));
+        if (DateTime.UtcNow - lastStats > TimeSpan.FromSeconds(10))
+        {
+            session.WriteStats(health);
+            lastStats = DateTime.UtcNow;
+        }
+        if (seconds > 0 && DateTime.UtcNow - started > TimeSpan.FromSeconds(seconds)) break;
+    }
+
+    var npcap = sniffer.Health();
+    sniffer.Stop();
+    var report = session.Finish(Path.Combine(dir, "census.json"), npcap);
+    File.WriteAllText(Path.Combine(dir, "census.txt"), report);
+    Console.WriteLine(report);
+    Console.WriteLine($"session: {dir}");
+    return 0;
+}
+
+DumpOptions ParseDumpOptions(string[] a) => new()
+{
+    WriteHeartbeats = !a.Contains("--no-heartbeat"),
+    ScanEmbedded = !a.Contains("--no-embedded"),
+};
+
+static string? Opt(string[] a, string name) =>
+    Array.IndexOf(a, name) is var i and >= 0 && i + 1 < a.Length ? a[i + 1] : null;
+
+static void Log(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {message}");
+
+/// <summary>The folder holding config/opcodes.json, searched upwards from the executable and the working directory.</summary>
+static string ProjectRoot()
+{
+    foreach (var start in new[] { AppContext.BaseDirectory, Environment.CurrentDirectory })
+        for (var d = new DirectoryInfo(start); d is not null; d = d.Parent)
+            if (File.Exists(Path.Combine(d.FullName, "config", "opcodes.json"))) return d.FullName;
+    return Environment.CurrentDirectory;
+}
