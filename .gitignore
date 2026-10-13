@@ -13,6 +13,8 @@ __pycache__/
 *.pyc
 # Local runtime data
 *.db
+*.db-shm
+*.db-wal
 *.sqlite
 
 # Third-party data (unclear license), local use only

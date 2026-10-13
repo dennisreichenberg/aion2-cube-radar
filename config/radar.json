@@ -1,0 +1,31 @@
+{
+  "_doc": "Radar settings. Opcodes are the two wire bytes as hex; after a patch shifts them, fix them here (see docs/FINDINGS.md and 'cuberadar census'). self_check warns in the UI when an expected record kind stays away.",
+  "opcodes": {
+    "heartbeat":      "0036",
+    "self_info":      "3336",
+    "map_load":       "2136",
+    "object_spawn":   "3436",
+    "object_removed": "3536",
+    "open_start":     "3836",
+    "open_done":      "3a36",
+    "pos_buff_a":     "2a38",
+    "pos_buff_b":     "2b38",
+    "pos_cast":       "0238",
+    "pos_target":     "0e38"
+  },
+  "self_id_opcodes": ["4a36", "4437", "4637", "038d", "028d", "338a"],
+  "self_check": [
+    { "kind": "heartbeat",    "within_s": 10,  "hint": "no game stream: is the game running, right adapter?" },
+    { "kind": "object_spawn", "within_s": 300, "hint": "no object spawns for 5 min although moving? the 34 36 opcode may have moved" },
+    { "kind": "pos_buff_a",   "within_s": 600, "hint": "no position records for 10 min: 2a 38 may have moved" }
+  ],
+  "north": "-y",
+  "fix_fresh_s": 5,
+  "keep_out_of_view_min": 30,
+  "keep_gone_s": 60,
+  "spots_csv": "data/external/hidden_cube_spots_thgl.csv",
+  "spot_match_units": 10,
+  "gone_check_units": 8000,
+  "ring_window_ms": 2000,
+  "ring_min_events": 3
+}

@@ -34,6 +34,7 @@ public sealed class DumpSession : IDisposable
         {
             Census.AddFrame(flow.TimeMs, in m, body);
             Jsonl?.Frame(flow, in m, body);
+            Tap?.Invoke(flow, in m, body);
         };
         Tracker.OnBundle = (GameFlow flow, in BundleMeta m) =>
         {
@@ -56,6 +57,9 @@ public sealed class DumpSession : IDisposable
     public PcapNgWriter? Pcap { get; }
     public long Packets { get; private set; }
     public long LastPacketMs { get; private set; }
+
+    /// <summary>Every decoded frame, under the session lock (e.g. for the radar engine).</summary>
+    public FrameSink? Tap { get; set; }
 
     /// <summary>Raised under the session lock when a game stream is recognised.</summary>
     public event Action<GameFlow>? FlowLocked;

@@ -319,3 +319,9 @@ Interaktionsreichweite (≈ 2 m, B7).
 - **2026-10-13 (Phase 2):** Eigene Position aus 4 Quellen (P1–P6), `PositionMessages` (C#) und Fixture `selfpos`.
   - `02 38` kind 2 trägt die Zielposition. Damit ist TheLoops Lesart korrigiert.
   - Ring-Fix-Fallback. Neue Werkzeuge: `selfscan.py`, `selftrack.py`, `ringfix.py`.
+- **2026-10-13 (Phase 3, gebaut):** `cuberadar radar` mit `RadarEngine`, SQLite-Spot-DB, Web-UI auf
+  127.0.0.1:5313 (Radar, Karte, Liste, WebSocket) und Selbstcheck aus `config/radar.json`.
+  - Template-Lernen über Key-Item und Spot-Treffer.
+  - Ein Cube, der nicht wieder gesendet wird, obwohl man nah dran ist, gilt als „weg“.
+  - Getestet per Replay von `20261013_114345` (beide Cubes, Status bis „geöffnet von dir“) und 20 s live.
+  - Die Abnahme im Spiel steht aus. Offen ist dabei auch die Nordachse (−Y laut Cube Watch).

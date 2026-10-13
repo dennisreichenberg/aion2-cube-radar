@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cube Radar</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Cube Radar</h1>
+    <div class="chips" id="chips"></div>
+  </header>
+  <div id="warnings" class="warnings" hidden></div>
+  <main>
+    <section class="view">
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="Ansicht">
+          <button data-mode="radar" class="on">Radar</button>
+          <button data-mode="map">Karte</button>
+        </div>
+        <label>Reichweite
+          <select id="range">
+            <option value="50">50 m</option>
+            <option value="100">100 m</option>
+            <option value="200" selected>200 m</option>
+            <option value="400">400 m</option>
+            <option value="1000">1 km</option>
+          </select>
+        </label>
+        <label title="Welche Weltachse zeigt nach Norden? Laut Cube Watch −Y; im Spiel prüfen.">Norden
+          <select id="north">
+            <option value="">Konfig</option>
+            <option value="-y">−Y</option>
+            <option value="+y">+Y</option>
+            <option value="+x">+X</option>
+            <option value="-x">−X</option>
+          </select>
+        </label>
+        <span class="spacer"></span>
+        <button id="sound" class="toggle">Ton aus</button>
+        <button id="notify" class="toggle">Hinweise aus</button>
+      </div>
+      <canvas id="canvas" aria-label="Radar"></canvas>
+      <div class="legend">
+        <span><i class="sw visible"></i>sichtbar</span>
+        <span><i class="sw out"></i>außer Sicht</span>
+        <span><i class="sw opening"></i>wird geöffnet</span>
+        <span><i class="sw gone"></i>geöffnet / weg</span>
+        <span><i class="sw me"></i>du</span>
+        <span><i class="sw spot"></i>mögliche Spots</span>
+        <span><i class="sw hist"></i>früher gesehen</span>
+      </div>
+    </section>
+    <aside>
+      <div class="listhead">
+        <h2>Cubes <span id="count"></span></h2>
+        <span class="exports">Export: <a href="/api/export/sightings.csv" download="sightings.csv">CSV</a> · <a href="/api/export/sightings.json" download="sightings.json">JSON</a></span>
+      </div>
+      <ol id="list" class="list"></ol>
+      <p id="empty" class="empty">Noch kein Cube in Sichtweite. Cubes werden ab etwa 105 m gemeldet.</p>
+    </aside>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

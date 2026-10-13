@@ -3,7 +3,7 @@
 Passives Werkzeug für Aion 2 (Global). Es liest per Npcap den Server→Client-Traffic mit, wie Wireshark, und soll
 live anzeigen, wo gerade Hidden Cubes stehen. Es betreibt kein Memory-Reading und keine Injection und sendet nichts.
 
-Stand: **Phase 2 abgeschlossen**. Der Hidden Cube ist in Verteron identifiziert (Template 1200039, Sende-Radius ≈ 105 m). Die eigene Position kommt aus vier ereignisgebundenen Quellen. Als Nächstes folgt die Radar-App (Phase 3). Alle Erkenntnisse stehen in
+Stand: **Phase 3 (Radar) gebaut, Abnahme im Spiel steht aus**. Der Hidden Cube ist in Verteron identifiziert (Template 1200039, Sende-Radius ≈ 105 m). Die eigene Position kommt aus vier ereignisgebundenen Quellen. Alle Erkenntnisse stehen in
 [`docs/FINDINGS.md`](docs/FINDINGS.md).
 
 ## Aufbau
@@ -11,11 +11,14 @@ Stand: **Phase 2 abgeschlossen**. Der Hidden Cube ist in Verteron identifiziert 
 | Pfad | Inhalt |
 |---|---|
 | `src/CubeRadar.Core` | Capture (Npcap/SharpPcap), Flow-Erkennung, TCP-Reassembly, Framing/LZ4 (abgeleitet von cyberbadger6969/aion2-dps-meter, GPL-3.0), pcapng-Writer, JSONL-Dump, Census |
-| `src/CubeRadar.Cli` | `cuberadar`: `dump live`, `dump <datei>`, `census`, `devices`, `conns`; Marker per globalem Hotkey oder Konsole |
+| `src/CubeRadar.Core/Radar` | `RadarEngine` (Cube-Status, eigene ID/Position, Ring-Fix, Template-Lernen), SQLite-Store, Spot-Index |
+| `src/CubeRadar.Cli` | `cuberadar`: `radar`, `dump live`, `dump <datei>`, `census`, `devices`, `conns`; Marker per globalem Hotkey oder Konsole; Web-UI in `wwwroot/` |
 | `tests/CubeRadar.Tests` | xunit: synthetische Framing-Tests, pcapng-Roundtrip, echte Stream-Fixtures |
 | `tools/` | Python (nur Stdlib): `a2wire.py` (unabhängiger Decoder), `census.py`, `crosscheck.py`, `make_fixture.py`, `objects.py` (Objekt-Lebenszyklus je Template), `radius.py` (Sende-Radius), `selfscan.py` (f32-Triplet-Scan nach der eigenen Position), `selftrack.py` (eigene Positionsspur, CSV/SVG), `ringfix.py` (Fallback-Schätzung) |
 | `config/opcodes.json` | Opcode-Namen inkl. Belegstatus, damit Patches ohne Code-Änderung abgefangen werden können |
 | `config/cubes.json` | Cube-Signatur: Templates je Zone, Öffnungs-Item, gemessener Sende-Radius |
+| `config/radar.json` | Opcodes des Radars, Selbstcheck, Nordachse, Haltezeiten, Pfad zur optionalen Spot-Liste |
+| `data/radar.db` | eigene Spot-Datenbank (SQLite, nicht im Git) |
 | `fixtures/` | echte Stream-Ausschnitte (Hex) mit erwarteten Frames |
 | `captures/` | Aufnahmen (nicht im Git) |
 | `ref/` | Referenz-Repos (nur gelesen, nicht im Git) |
@@ -28,6 +31,34 @@ dotnet test CubeRadar.slnx -c Release
 ```
 
 Die ausführbare Datei liegt dann unter `src\CubeRadar.Cli\bin\Release\net10.0-windows\cuberadar.exe`. Kurz: `.\cuberadar.cmd`.
+
+## Radar
+
+```powershell
+.\cuberadar.cmd radar
+```
+
+Öffnet `http://127.0.0.1:5313` im Browser.
+- **Radar** zeigt die Umgebung um dich (Nord oben, Ringe, Sichtweite ≈ 105 m gestrichelt).
+- **Karte** zeigt alle Cubes, deine Spur und, falls vorhanden, die möglichen Spots der Zone.
+- **Liste:** Distanz, Kompassrichtung, Höhenunterschied, „gesehen vor“, „existiert seit“ und Status. Die Status sind:
+  sichtbar, außer Sicht (steht vermutlich noch), wird geöffnet, geöffnet (von dir oder Spieler N), weg.
+- **„Ton an“ und „Hinweise an“** im Browser geben einen Ton bzw. eine Desktop-Benachrichtigung bei jedem neuen Cube.
+  Die Konsole piept zusätzlich (abschalten mit `--no-beep`).
+- **Eigene Position:** Sie kommt nur bei Ereignissen, etwa wenn du Buffs wirkst oder angegriffen wirst. Die Kopfzeile
+  zeigt, wie alt sie ist. Ohne frische Position zeigt das Radar eine Schätzung mit Unsicherheitskreis.
+- **Nordrichtung:** Die Konfiguration nimmt Welt −Y an (unbestätigt). Stimmt die Richtung nicht mit der Minimap
+  überein, stellst du sie oben bei „Norden“ um. Die Auswahl wird gespeichert.
+- **Aufzeichnung:** Jede Sitzung schreibt `capturesadar_<datum_zeit>aw.pcapng` und `markers.jsonl`. Die Hotkeys
+  aus dem nächsten Abschnitt funktionieren auch hier.
+- **Datenbank:** Jede Sichtung landet in `dataadar.db`. Export über die Links „CSV“ und „JSON“ in der Liste.
+- **Selbstcheck:** Bleiben erwartete Pakete aus (etwa nach einem Patch), erscheint ein roter Hinweis. Die Opcodes
+  stehen in `configadar.json`.
+- **Andere Zonen:** Wird ein Objekt mit dem Cube-Key geöffnet oder steht es exakt auf einem bekannten Spot, lernt das
+  Radar dessen Template als Cube-Template.
+
+Replay zum Testen: `.\cuberadar.cmd radar --replay captures\<sitzung>aw.pcapng --speed 5`. Mit `--stop-at 200`
+hält der Replay bei Sekunde 200 des Mitschnitts an.
 
 ## Aufnehmen
 

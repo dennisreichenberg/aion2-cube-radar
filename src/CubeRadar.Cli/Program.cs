@@ -20,6 +20,7 @@ try
         "dump" when args.Length > 1 && args[1] == "live" => DumpLive(args[2..]),
         "dump" when args.Length > 1 => DumpFile(args[1], args[2..], writeJsonl: true),
         "census" when args.Length > 1 => DumpFile(args[1], args[2..], writeJsonl: false),
+        "radar" => RadarCommand.Run(args[1..], book, ProjectRoot()),
         "--version" => Print(DumpSession.Version),
         _ => Usage(),
     };
@@ -52,6 +53,15 @@ int Usage()
                                                    decode a recording into <name>.replay.jsonl + census;
                                                    markers.jsonl next to the file is merged automatically
         cuberadar census <file.pcap|.pcapng>       opcode census and stream health only
+        cuberadar radar [options]                  live Hidden Cube radar on http://127.0.0.1:5313
+            --port N           web port (default 5313)
+            --device NAME      force an Npcap adapter
+            --replay FILE      feed a recorded .pcap/.pcapng instead of live capture
+            --speed X          replay speed factor (default 1; 0 = as fast as possible)
+            --stop-at S        stop feeding the replay S seconds into the capture (inspect that moment)
+            --no-record        do not record raw.pcapng into captures/radar_<date_time>/
+            --no-hotkeys, --hotkeys SPEC, --no-beep   as for 'dump live' (beep also on new cubes)
+            --no-browser       do not open the browser
 
         Console during 'dump live': Enter = marker (text optional), 1-5 = the hotkey markers, q = stop.
         """);
@@ -145,48 +155,9 @@ int DumpLive(string[] a)
         stop.Set();
     };
 
-    void Mark(string label, string? text, string via, int tone)
-    {
-        var m = new Marker(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), label, text, via);
-        session.AddMarker(m);
-        Log($"MARKER {label}{(string.IsNullOrEmpty(text) ? "" : $" \"{text}\"")} ({via})");
-        if (beep) Task.Run(() => Console.Beep(tone, 150));
-    }
-
-    int[] tones = [880, 660, 440, 990, 550];
-    using var hotkeys = bindings.Count == 0 ? null : new GlobalHotkeys(bindings, b =>
-    {
-        var i = bindings.IndexOf(b);
-        Mark(b.Label, null, "hotkey", tones[i % tones.Length]);
-    });
-
+    using var markers = new MarkerInput(session, bindings, beep, stop.Set);
     Console.WriteLine($"session: {dir}");
-    if (hotkeys is not null)
-        foreach (var (b, ok, err) in hotkeys.Results)
-            Console.WriteLine($"  hotkey {b.Display,-16} → {b.Label,-18} {(ok ? "ok" : $"NOT registered (error {err}, taken by another program?)")}");
-    Console.WriteLine("  console: Enter = marker (text optional), 1-5 = hotkey markers, q = stop");
-
-    var console = new Thread(() =>
-    {
-        while (!stop.IsSet)
-        {
-            var line = Console.ReadLine();
-            if (line is null) return; // stdin closed
-            line = line.Trim();
-            if (line is "q" or "quit" or "/q")
-            {
-                stop.Set();
-                return;
-            }
-            if (line.Length == 1 && line[0] is >= '1' and <= '9' && line[0] - '1' < bindings.Count)
-            {
-                var i = line[0] - '1';
-                Mark(bindings[i].Label, null, "console", tones[i % tones.Length]);
-            }
-            else Mark("note", line.Length == 0 ? null : line, "console", 770);
-        }
-    }) { IsBackground = true, Name = "console" };
-    console.Start();
+    markers.PrintHelp();
 
     sniffer.Start();
     var started = DateTime.UtcNow;
