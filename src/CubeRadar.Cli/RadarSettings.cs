@@ -18,6 +18,8 @@ internal sealed class RadarSettings
     public int? OverlayY { get; set; }
     public bool OverlayVisible { get; set; } = true;
     public int OverlayRangeM { get; set; } = 120;
+    /// <summary>Hide the overlay while the mouse cursor is visible (in-game menus / UI mode).</summary>
+    public bool OverlayHideInMenus { get; set; } = true;
 
     public static RadarSettings Load(string path)
     {

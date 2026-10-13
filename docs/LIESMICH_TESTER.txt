@@ -34,11 +34,13 @@ Mini-Radar (kleines Fenster ueber dem Spiel)
   Norden oben, du in der Mitte, Ringe mit Meterangabe, gestrichelt die Sichtweite (~100 m), duenn deine
   letzte Laufspur (zeigt, woher du kommst). Cubes als Dreieck hoch/runter (ueber/unter dir) oder Quadrat
   (gleiche Hoehe) mit z. B. "86 m ▲38". Cubes ausserhalb des Zooms: Doppelpfeil » am Rand.
-  Es ist klick-durchlaessig und nimmt dem Spiel nie den Fokus. Das Spiel muss im Fenster- oder randlosen
-  Vollbildmodus laufen (ueber exklusivem Vollbild kann nichts gezeichnet werden).
-  Strg+Umschalt+F10 = ein/aus
+  Es nimmt dem Spiel nie den Fokus. Das Spiel muss im Fenster- oder randlosen Vollbildmodus laufen
+  (ueber exklusivem Vollbild kann nichts gezeichnet werden).
+  Verschieben: einfach mit der Maus ziehen (Position wird gespeichert). Zoom: Mausrad ueber dem Overlay.
+  Es ist nur sichtbar, wenn Aion 2 im Vordergrund ist, und blendet sich aus, solange der Mauszeiger
+  sichtbar ist (Menues). Faehrst du mit dem Zeiger an seine Stelle, erscheint es zum Greifen.
+  Strg+Umschalt+F10 = ganz aus/an
   Strg+Umschalt+F12 = Zoom 60 / 120 / 250 m
-  Strg+Umschalt+F11 = verschieben: druecken, Overlay mit der Maus ziehen, nochmal druecken (Position wird gespeichert)
 
 Testauftrag (ca. 15-20 Minuten in Verteron oder Altgard)
   1. In ein Gebiet mit vielen Cube-Spots laufen.

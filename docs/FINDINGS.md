@@ -397,3 +397,10 @@ Interaktionsreichweite (≈ 2 m, B7).
   - Norden oben, du in der Mitte, Ringe, Sichtweite, deine Laufspur.
   - Cubes als ▲/▼/■ mit Entfernung und Höhe; außerhalb des Zooms ein »-Zeiger am Rand.
   - Zoom 60 / 120 / 250 m (Strg+Umschalt+F12), wird in `data/settings.json` gespeichert.
+- **2026-10-13 (Radar 0.4.2):** Overlay-Verhalten wie bei anderen Spiel-Overlays.
+  - Immer mit der Maus verschiebbar (F11-Entsperren entfällt), Zoom per Mausrad.
+  - Nur sichtbar, solange Aion 2 das Vordergrundfenster ist.
+  - Ausgeblendet, solange der Mauszeiger sichtbar ist (Heuristik für Menüs/UI-Modus, abschaltbar mit
+    `OverlayHideInMenus`). Liegt der Zeiger über dem Overlay, bleibt es sichtbar, damit man es greifen kann.
+  - Dafür wird nur der Windows-Fenster- und Cursorstatus gelesen. Ob das Spiel den Cursor in der Welt wirklich
+    ausblendet, muss sich beim Spielen zeigen.

@@ -8,24 +8,30 @@ using CubeRadar.Core.Radar;
 namespace CubeRadar.Cli;
 
 /// <summary>
-/// Small always-on-top, click-through mini radar over the game: north up, we in the middle, live cubes with distance
-/// and height, our recent trail. It never takes focus. Ctrl+Shift+F10 shows/hides it, Ctrl+Shift+F11 unlocks it for
-/// dragging (position saved when locking again), Ctrl+Shift+F12 cycles the range. Works over windowed / borderless
-/// games; nothing can draw over exclusive fullscreen.
+/// Small always-on-top mini radar over the game: north up, we in the middle, live cubes with distance and height, our
+/// recent trail. It never takes focus and can always be dragged with the mouse (position saved on release); the mouse
+/// wheel zooms. Like other game overlays it hides while AION 2 is not the foreground window and, optionally, while the
+/// mouse cursor is visible (menus / UI mode: in the world the game hides the cursor) unless the cursor is over the
+/// overlay, so it can still be grabbed. Only Windows window/cursor state is read, nothing from the game itself.
+/// Ctrl+Shift+F10 switches it off/on, Ctrl+Shift+F12 cycles the range. Nothing can draw over exclusive fullscreen.
 /// </summary>
 internal sealed class OverlayWindow : Form
 {
-    private const int WsExLayered = 0x80000, WsExTransparent = 0x20, WsExToolWindow = 0x80, WsExNoActivate = 0x08000000, WsExTopmost = 0x8;
-    private const int GwlExStyle = -20;
+    private const int WsExLayered = 0x80000, WsExToolWindow = 0x80, WsExNoActivate = 0x08000000, WsExTopmost = 0x8;
+    private const int WmNcHitTest = 0x84, WmMouseActivate = 0x21, WmExitSizeMove = 0x232, HtCaption = 2, MaNoActivate = 3;
+    private const int CursorShowing = 0x1;
     private static readonly IntPtr HwndTopmost = new(-1);
     public static readonly int[] Ranges = [60, 120, 250];
 
     private readonly Func<RadarSnapshot> _snapshot;
     private readonly RadarSettings _settings;
-    private readonly System.Windows.Forms.Timer _timer = new() { Interval = 250 };
+    private readonly System.Windows.Forms.Timer _timer = new() { Interval = 150 };
     private RadarSnapshot? _last;
-    private bool _unlocked;
     private int _ticks;
+    private bool _moving;
+    private int[] _gamePids = [];
+    private long _gamePidsAt = -10_000;
+    private long _cursorShownSince = -1;
 
     public OverlayWindow(Func<RadarSnapshot> snapshot, RadarSettings settings)
     {
@@ -47,12 +53,6 @@ internal sealed class OverlayWindow : Form
         Location = OnSomeScreen(new Point(x, y)) ? new Point(x, y) : new Point(screen.Right - Width - 24, screen.Top + 300);
         _timer.Tick += (_, _) => Tick();
         _timer.Start();
-        MouseDown += (_, e) =>
-        {
-            if (!_unlocked || e.Button != MouseButtons.Left) return;
-            ReleaseCapture();
-            SendMessage(Handle, 0xA1, 2, 0); // WM_NCLBUTTONDOWN on the caption: Windows does the dragging
-        };
     }
 
     /// <summary>Runs the overlay on its own UI thread; returns once the window exists.</summary>
@@ -65,7 +65,6 @@ internal sealed class OverlayWindow : Form
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
             window = new OverlayWindow(snapshot, settings);
             _ = window.Handle; // the handle must exist for calls from other threads, also while hidden
-            if (settings.OverlayVisible) window.Show();
             ready.Set();
             Application.Run(new ApplicationContext());
         }) { IsBackground = true, Name = "overlay" };
@@ -82,32 +81,47 @@ internal sealed class OverlayWindow : Form
         get
         {
             var cp = base.CreateParams;
-            cp.ExStyle |= WsExLayered | WsExTransparent | WsExToolWindow | WsExNoActivate | WsExTopmost;
+            cp.ExStyle |= WsExLayered | WsExToolWindow | WsExNoActivate | WsExTopmost;
             return cp;
         }
     }
 
+    protected override void WndProc(ref Message m)
+    {
+        switch (m.Msg)
+        {
+            case WmNcHitTest:
+                m.Result = HtCaption; // the whole overlay is a drag handle; Windows moves it
+                _moving = (MouseButtons & MouseButtons.Left) != 0;
+                return;
+            case WmMouseActivate:
+                m.Result = MaNoActivate; // clicking it never takes the focus from the game
+                return;
+            case WmExitSizeMove:
+                _moving = false;
+                _settings.OverlayX = Left;
+                _settings.OverlayY = Top;
+                _settings.Save();
+                break;
+        }
+        base.WndProc(ref m);
+    }
+
+    protected override void OnMouseWheel(MouseEventArgs e)
+    {
+        var i = Math.Max(0, Array.IndexOf(Ranges, _settings.OverlayRangeM));
+        i = Math.Clamp(i + (e.Delta > 0 ? -1 : 1), 0, Ranges.Length - 1); // wheel up = zoom in
+        _settings.OverlayRangeM = Ranges[i];
+        _settings.Save();
+        Invalidate();
+    }
+
+    /// <summary>Ctrl+Shift+F10: the user's on/off switch (auto-hiding works on top of it).</summary>
     public void ToggleVisible() => Ui(() =>
     {
-        Visible = !Visible;
-        _settings.OverlayVisible = Visible;
+        _settings.OverlayVisible = !_settings.OverlayVisible;
         _settings.Save();
-    });
-
-    public void ToggleLock() => Ui(() =>
-    {
-        _unlocked = !_unlocked;
-        var style = GetWindowLong(Handle, GwlExStyle);
-        style = _unlocked ? style & ~WsExTransparent : style | WsExTransparent;
-        SetWindowLong(Handle, GwlExStyle, style);
-        if (!_unlocked)
-        {
-            _settings.OverlayX = Left;
-            _settings.OverlayY = Top;
-            _settings.Save();
-        }
-        if (_unlocked && !Visible) Visible = true;
-        Invalidate();
+        UpdateVisibility();
     });
 
     public void CycleRange() => Ui(() =>
@@ -133,14 +147,55 @@ internal sealed class OverlayWindow : Form
 
     private void Tick()
     {
+        UpdateVisibility();
+        if (!Visible) return;
         _last = _snapshot();
         // Some games push themselves to the top when they regain focus: re-assert every 2 s.
-        if (++_ticks % 8 == 0 && Visible) SetWindowPos(Handle, HwndTopmost, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010);
+        if (++_ticks % 13 == 0) SetWindowPos(Handle, HwndTopmost, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010);
         Invalidate();
     }
 
+    private void UpdateVisibility()
+    {
+        var show = _settings.OverlayVisible && (_moving || WantedOverGame());
+        if (show == Visible) return;
+        if (show)
+        {
+            _last = _snapshot();
+            Show(); // without activation (ShowWithoutActivation)
+        }
+        else Hide();
+    }
+
+    /// <summary>Only while the game is in front, and (optionally) not while its cursor is out for a menu.</summary>
+    private bool WantedOverGame()
+    {
+        var now = Environment.TickCount64;
+        if (now - _gamePidsAt > 5_000)
+        {
+            _gamePids = CubeRadar.Core.Capture.GameProcessLocator.FindGameProcessIds();
+            _gamePidsAt = now;
+        }
+        if (_gamePids.Length == 0) return true; // no game running (replay / testing): just show it
+
+        GetWindowThreadProcessId(GetForegroundWindow(), out var pid);
+        if (!_gamePids.Contains((int)pid)) return false;
+
+        if (!_settings.OverlayHideInMenus) return true;
+        var info = new CursorInfo { Size = Marshal.SizeOf<CursorInfo>() };
+        var cursorShown = GetCursorInfo(ref info) && (info.Flags & CursorShowing) != 0;
+        if (!cursorShown)
+        {
+            _cursorShownSince = -1;
+            return true;
+        }
+        if (Bounds.Contains(Cursor.Position)) return true; // pointing at it: show, so it can be dragged
+        if (_cursorShownSince < 0) _cursorShownSince = now;
+        return now - _cursorShownSince < 300; // brief cursor flashes do not make it flicker
+    }
+
     protected override void OnPaint(PaintEventArgs e) =>
-        OverlayRenderer.Render(e.Graphics, ClientSize, _last, DeviceDpi / 96f, _settings.OverlayRangeM, _unlocked);
+        OverlayRenderer.Render(e.Graphics, ClientSize, _last, DeviceDpi / 96f, _settings.OverlayRangeM);
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
@@ -150,20 +205,26 @@ internal sealed class OverlayWindow : Form
 
     private static bool OnSomeScreen(Point p) => Screen.AllScreens.Any(s => s.WorkingArea.Contains(p));
 
-    [DllImport("user32.dll")]
-    private static extern int GetWindowLong(IntPtr hWnd, int index);
+    [StructLayout(LayoutKind.Sequential)]
+    private struct CursorInfo
+    {
+        public int Size;
+        public int Flags;
+        public IntPtr Cursor;
+        public Point Position;
+    }
 
     [DllImport("user32.dll")]
-    private static extern int SetWindowLong(IntPtr hWnd, int index, int value);
+    private static extern bool GetCursorInfo(ref CursorInfo info);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
     [DllImport("user32.dll")]
     private static extern bool SetWindowPos(IntPtr hWnd, IntPtr insertAfter, int x, int y, int cx, int cy, uint flags);
-
-    [DllImport("user32.dll")]
-    private static extern bool ReleaseCapture();
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
 }
 
 internal static class Palette
@@ -187,7 +248,7 @@ internal static class OverlayRenderer
 
     public static Size Measure(float scale) => new((int)(Side * scale), (int)((Side + Header) * scale));
 
-    public static void Render(Graphics g, Size size, RadarSnapshot? s, float scale, int rangeM, bool unlocked)
+    public static void Render(Graphics g, Size size, RadarSnapshot? s, float scale, int rangeM)
     {
         g.SmoothingMode = SmoothingMode.AntiAlias;
         g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
@@ -198,7 +259,7 @@ internal static class OverlayRenderer
         using var label = new Font("Segoe UI", 8.5f, FontStyle.Bold, GraphicsUnit.Point);
         using var tiny = new Font("Segoe UI", 7f, FontStyle.Regular, GraphicsUnit.Point);
 
-        using (var border = new Pen(unlocked ? Palette.Warn : Palette.Line, unlocked ? 2 : 1) { DashStyle = unlocked ? DashStyle.Dash : DashStyle.Solid })
+        using (var border = new Pen(Palette.Line, 1))
             g.DrawRectangle(border, 0.5f, 0.5f, Side - 1, Side + Header - 1);
 
         // header: name, own position age, range
@@ -374,7 +435,7 @@ internal static class OverlayRenderer
     {
         var size = Measure(scale);
         using var bmp = new Bitmap(size.Width, size.Height);
-        using (var g = Graphics.FromImage(bmp)) Render(g, size, s, scale, rangeM, unlocked: false);
+        using (var g = Graphics.FromImage(bmp)) Render(g, size, s, scale, rangeM);
         bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
     }
 }
