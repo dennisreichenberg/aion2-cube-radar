@@ -123,6 +123,69 @@ Die Position zum Zeitpunkt des ersten `34 36` ist linear zwischen den benachbart
   Cube Watchs „~15.000“ passt nicht zu unseren Werten.
 - Offen: der Austrittsradius bei Cubes (`35 36` Grund `01`). Es gab noch keine Cube-Sichtung ohne Öffnen.
 
+## Phase 2: Eigene Position (BELEGT, 2026-10-13)
+
+Ausgewertet wurden alle drei Mitschnitte (`112703` Kampf 25 s, `114103` 111 s, `114345` Verteron 317 s), eigene
+Entity 9180. Werkzeuge: `tools/selfscan.py`, `tools/selftrack.py` und `tools/ringfix.py`. Parser:
+`PositionMessages` (C#). Fixture: `fixtures/selfpos/2026-10-13_position_sources.json`, inklusive Negativfällen.
+
+### P1. Der Server schickt die eigene Bewegung nicht zurück
+Der f32-Triplet-Scan lief über jeden Frame, jeden Opcode und jeden Offset, auch in Bundles, abgeglichen mit der
+Referenzspur aus `2a 38`. Er findet in `1a 37`, `1b 37`, `1c 37` und `29 37` nur Positionen **anderer** Entities:
+Mobs, einen anderen Spieler (id 1202) und einen Summon (26082). Die eigene id 9180 steht dort nie im ersten Feld.
+`29 37` ist eine Bewegung mit Geschwindigkeitsvektor: `id, flags (u8, ungerade → +1 Byte), x y z, vx vy vz, u16`.
+
+### P2. Vier Quellen für die eigene Position, alle ereignisgebunden
+
+| Opcode | Layout | Position von | Beispiel (Body-Hex, 112703) |
+|---|---|---|---|
+| `2a 38` | …, Caster varint, `01 00`, x y z | Caster | `dc 47 01 11 90 03 e8 03 … 23 51 96 34 a1 01 00 00 dc 47 01 00 b3 98 4a 46 a2 79 9f c7 51 3e 59 44` → (12966, −81651, 869) |
+| `2b 38` | …, u64 Zeit, Caster varint, u8, u32, `02`, x y z | Caster | `dc 47 13 84 03 … 28 61 96 34 a1 01 00 00 dc 47 01 17 1d d2 00 02 e7 40 4a 46 95 a1 9f c7 00 40 59 44` → (12944, −81731, 869) |
+| `02 38` kind 2 | Akteur varint, flag varint, Skill u32, seq u8, `02`, Ziel varint, Heading f32, x y z | **Ziel** | Mob 40714 castet auf uns: `8a be 02 00 38 9c 12 00 01 02 dc 47 97 a9 66 c1 e7 40 4a 46 95 a1 9f c7 00 40 59 44 …` → (12944, −81731, 869), identisch mit `2b 38` |
+| `0e 38` | Entity varint, `02`, Ziel varint, u32, u8, u32, x y z, … | Ziel | `8a be 02 02 dc 47 38 9c 12 00 01 b1 b4 e8 05 36 dc 49 46 dd 93 9f c7 00 c0 7a 44 …` → (12919, −81704, 1003) |
+
+- **`02 38` kind 2 trägt die Position des ZIELS.** Der Median-Abstand zur bekannten Zielposition ist 0 Einheiten,
+  zum Caster 160–307 (in allen drei Sitzungen). TheLoops „Caster-xyz“ ist damit widerlegt.
+  - Eigene Position aus einem Cast gibt es also nur bei Self-Casts und wenn ein Mob dich angreift.
+  - Einige Skills tragen statt xyz kleine Werte (32-Byte-Variante, z. B. −108/−31/−95). Die verwirft die
+    Plausibilitätsprüfung (Abstand vom Ursprung > 2.000).
+- `2a 38`/`2b 38`: Ziel und Caster sind fast immer gleich (Self-Buffs). In den 5 Fällen mit verschiedenem Ziel passt
+  xyz zum Caster (Median 0, zum Ziel 24).
+- **Übereinstimmung der Quellen untereinander** (gleiches Zeitfenster ≤ 1 s, planar): `02 38`/`2b 38` Median 0,
+  `0e 38`/`2b 38` 37, `2a 38`/`2b 38` 83–159. Das sind alles < 2 m.
+- `21 36` (Map-Load) und `23 36` (Teleport) kamen in keinem Mitschnitt vor. Ob sie xyz tragen, bleibt COMMUNITY.
+
+### P3. Dichte: gut im Kampf, dünn beim reinen Laufen
+| Sitzung | Fixes | Median-Abstand | 90 % | max. Lücke | Zeit in Lücken > 10 s |
+|---|---|---|---|---|---|
+| 112703 (Kampf) | 39 / 25 s | 0,3 s | 1,9 s | 2,8 s | 0 s |
+| 114103 | 29 / 111 s | 2,2 s | 10,7 s | 15,1 s | 39 s |
+| 114345 (Cube-Suche) | 39 / 317 s | 3,9 s | 22,6 s | 45,5 s | **206 s** |
+
+### P4. Plausibilität der Spur
+- Geschwindigkeit zwischen Fixes: Median 3,8–6,9 m/s, 90 % ≤ 23 m/s, Maximum 30,9 m/s (bei 1 Einheit = 1 cm). Es gibt
+  keine Sprünge über 40 m/s.
+- Beim Öffnen der Cubes 195 bzw. 234 Einheiten vom Cube entfernt (B7).
+- Spuren als Bild: `captures/<sitzung>/selftrack.svg` (Norden oben = Welt −Y laut Cube Watch).
+
+### P5. Fallback-Heuristik „Ring-Fix“
+Objekte erscheinen (`34 36`) und verschwinden (`35 36` Grund `01`) auf template-typischen Radien (B8). Jedes solche
+Ereignis legt die eigene Position auf einen Kreis um das Objekt. Mindestens 3 Ereignisse innerhalb von 2 s lassen
+sich per Kleinste-Quadrate kombinieren.
+- Fehler gegen echte Fixes: Median **307 / 1.082 / 716 Einheiten** (3–11 m). 90 % liegen bei 401 / 9.394 / 2.995
+  (Sitzungen 112703 / 114103 / 114345).
+- Einschränkung: Die Radien sind aus derselben Sitzung gelernt. Das Radar braucht dafür eine wachsende Radientabelle
+  je Template.
+
+### P6. Hypothese „Positions-Ping“
+Jeder eigene Self-Buff erzeugt `2a 38`/`2b 38` mit der eigenen Position. Ein billiger Self-Buff auf einer Taste wäre
+also ein Positions-Update auf Knopfdruck. Das ist ungetestet.
+
+**Folgerung fürs Radar (Phase 3):**
+- Die Cubes werden in absoluten Koordinaten auf einer Zonenkarte gezeigt. Das funktioniert ohne eigene Position.
+- Entfernung und Richtung relativ zu dir gibt es nur mit frischem Fix. Das Alter des Fixes wird angezeigt.
+- Ist kein frischer Fix da, zeigt das Radar den Ring-Fix mit Unsicherheitskreis.
+
 ## BEOBACHTET (strukturell, noch nicht gezielt geprüft)
 
 Gleicher Mitschnitt `captures/20261013_112703`.
@@ -179,10 +242,10 @@ sondern ein anderer Spieler. Bestätigt durch B6.
 | `35 36` | Objekt entfernt: `04` zerstört/geöffnet, `01` außer Sicht | id varint, reason u8 | Cube Watch; eigene Mitschnitte | `04` **BELEGT** für Cubes (B6), `01` bei anderen Objekten beobachtet |
 | `38 36` / `3a 36` | Öffnen beginnt / ist fertig | objekt varint, akteur varint, `01` / count u32, item u32 | Cube Watch; eigene Mitschnitte | **BELEGT** (B6) |
 | `1e 56` | Loot aus geöffnetem Objekt | `01`, objekt u32, objekt-xyz, drop-xyz, …, item u32, count u32, … | Cube Watch; eigene Mitschnitte | beobachtet (B6) |
-| `2a 38` / `2b 38` | Position (bei anderen Repos „Buff“): id, …, id, `01 00`/`01 02`, x y z | | Cube Watch; NOIA2/Kuroukihime nennen es Buff | `2a 38` **BELEGT** als Eigenposition (B7), `2b 38` HYPOTHESE |
-| `1a 37` | Entity-Position: id, 2 B, x y z | | HamMeter `main`, Cube Watch | HYPOTHESE |
-| `1b 37` | Bewegung: id, flags u8, x y z | | HamMeter `main` | HYPOTHESE |
-| `02 38` kind 2 | Cast mit Heading + Caster-xyz | | TheLoop (Fixture `wb-cast-kind2-position`) | COMMUNITY |
+| `2a 38` / `2b 38` | Buff-Records mit Caster-Position (Layouts siehe P2) | | Cube Watch; NOIA2/Kuroukihime nennen es Buff | **BELEGT** (B7, P2) |
+| `1a 37` | Entity-Position: id, 2 B, x y z | | HamMeter `main`, Cube Watch | beobachtet für **fremde** Entities, nie die eigene (P1) |
+| `1b 37` / `1c 37` / `29 37` | Bewegung: id, flags u8 (+1 B wenn ungerade), x y z (… `29 37`: + vx vy vz) | | HamMeter `main`; eigene Mitschnitte | beobachtet für **fremde** Entities, nie die eigene (P1) |
+| `02 38` kind 2 | Cast mit Heading + xyz | | TheLoop („Caster-xyz“) | **BELEGT: xyz = Ziel**, nicht Caster (P2) |
 | `21 36` | Map-Load: count u32, map u32 (+ instanz, 0, x y z heading laut TheLoop-Encoder) | | cyberbadger, chen-zilei, TheLoop | COMMUNITY |
 | `41 36` | NPC-Spawn, kind `0c/0d` NPC, `04/05` „andere Objekte“, `1c/1d/1f/5d/5f` Summons | | alle Meter; Kinds laut HamMeter-Doku | Layout beobachtet (O4) |
 | `42 36` | Tod/Entfernt: id, 0, flag (1 tot geladen/entfernt, 3 im Kampf gestorben, 7 aus der Welt) | | cyberbadger, HamMeter-Doku | COMMUNITY |
@@ -211,7 +274,7 @@ Ebene.
 | 1 | Kommen Cubes als Entity? | **Ja, BELEGT (Verteron, 2×):** `34 36`, Template 1200039 (B5). Templates je Zone verschieden. | Altgard/Eltnen/Morheim-Templates sammeln |
 | 2 | Sende-Radius | **≈ 10.500 Einheiten planar (≈ 105 m), 2 Messungen (B8)** | mehr Sichtungen; Austrittsradius (F7-Test) |
 | 3 | Despawn/Geöffnet | **BELEGT (2×):** `38 36` → `3a 36` (+4,25 s) → `35 36` Grund `04` (B6) | Grund `01` bei Cubes (außer Sicht) prüfen; fremde Öffnungen |
-| 4 | Eigene Position | `2a 38` **BELEGT** (B7), aber nur alle 2–15 s. Weitere Kandidaten: `1a 37`, `1b 37`, `02 38` kind 2, `21 36` | Phase 2 |
+| 4 | Eigene Position | **BELEGT (Phase 2):** `2a 38`, `2b 38`, `02 38` (wir als Ziel), `0e 38`, nur ereignisgebunden. Fallback Ring-Fix (P1–P6) | `21 36`/`23 36` bei Zonenwechsel prüfen; Positions-Ping testen |
 | 5 | Zonenweiter Hinweis | Nichts gefunden (Recherche) | In Phase 1 mitprüfen |
 
 **Abbruchkriterium:** greift **nicht**. Cubes kommen aus ≈ 105 m Entfernung über die Leitung (B8), weit jenseits der
@@ -250,3 +313,9 @@ Interaktionsreichweite (≈ 2 m, B7).
     `tools/objects.py`, `tools/radius.py`.
   - Der einzige Marker dieser Aufnahme war `cube_opened` (F6) um 11:47:10.8, nicht F5. Für die Auswertung war er
     nicht nötig.
+- **2026-10-13 (Phase 1 abgeschlossen):** Abnahme auf Wunsch ohne weitere Aufnahme.
+  - Offen und verschoben: Cube-Austritt `35 36` Grund `01`, mehr Radius-Messungen, Templates anderer Zonen. Das
+    Radar sammelt diese Daten im Betrieb.
+- **2026-10-13 (Phase 2):** Eigene Position aus 4 Quellen (P1–P6), `PositionMessages` (C#) und Fixture `selfpos`.
+  - `02 38` kind 2 trägt die Zielposition. Damit ist TheLoops Lesart korrigiert.
+  - Ring-Fix-Fallback. Neue Werkzeuge: `selfscan.py`, `selftrack.py`, `ringfix.py`.

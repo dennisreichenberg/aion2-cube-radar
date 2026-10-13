@@ -54,8 +54,8 @@ public class CubeFixtureTests
 
             // Own position at the moment of opening: within a few metres of the cube.
             var openT = frames.First(f => f.Op == ObjectMessages.OpenStart && ObjectMessages.TryParseInteraction(f.Body, false, out var i) && i.ObjectId == id).T;
-            var fix = frames.Where(f => f.Op == ObjectMessages.PositionRecord && f.T <= openT)
-                .Select(f => ObjectMessages.TryParsePositionRecord(f.Body, out var p) ? p : default).Last(p => p.EntityId == self);
+            var fix = frames.Where(f => f.T <= openT)
+                .Select(f => PositionMessages.TryParse(f.Op, f.Body, out var p) ? p : default).Last(p => p.EntityId == self);
             var d = MathF.Sqrt(MathF.Pow(fix.X - spawn.X, 2) + MathF.Pow(fix.Y - spawn.Y, 2) + MathF.Pow(fix.Z - spawn.Z, 2));
             Assert.InRange(d, 0, 500);
         }

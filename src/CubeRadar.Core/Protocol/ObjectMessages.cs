@@ -13,8 +13,6 @@ public readonly record struct ObjectRemoved(uint Id, byte Reason);
 /// tail reads count 1 + item 0x259AC523 (presumably the consumed key).</summary>
 public readonly record struct ObjectInteraction(uint ObjectId, uint ActorId, bool Done, uint Count, uint Item);
 
-public readonly record struct EntityPosition(uint EntityId, float X, float Y, float Z);
-
 /// <summary>
 /// Object lifecycle and own-position records, verified on Global build 25800038 (2026-10-13):
 /// <code>
@@ -22,12 +20,11 @@ public readonly record struct EntityPosition(uint EntityId, float X, float Y, fl
 /// 35 36  id varint, reason u8 (04 = destroyed / opened, 01 = left view), …
 /// 38 36  object varint, actor varint, 01
 /// 3a 36  object varint, actor varint, count u32, item u32
-/// 2a 38  entity varint, …, entity varint (repeated), 01 00, x y z f32   (own position when entity = own id)
 /// </code>
 /// </summary>
 public static class ObjectMessages
 {
-    public const ushort Spawn = 0x3436, Removed = 0x3536, OpenStart = 0x3836, OpenDone = 0x3A36, PositionRecord = 0x2A38;
+    public const ushort Spawn = 0x3436, Removed = 0x3536, OpenStart = 0x3836, OpenDone = 0x3A36;
     public const byte ReasonDestroyed = 0x04, ReasonLeftView = 0x01;
 
     public static bool TryParseSpawn(ReadOnlySpan<byte> b, out ObjectSpawn spawn)
@@ -75,23 +72,6 @@ public static class ObjectMessages
             item = Wire.U32(b, o + 4);
         }
         interaction = new ObjectInteraction(obj, actor, done, count, item);
-        return true;
-    }
-
-    /// <summary><c>2a 38</c> whose tail repeats the leading entity id followed by <c>01 00</c> and x y z.</summary>
-    public static bool TryParsePositionRecord(ReadOnlySpan<byte> b, out EntityPosition position)
-    {
-        position = default;
-        var o = 0;
-        if (!Wire.TryVarint(b, ref o, out var id)) return false;
-        var tail = b.Length - 14 - o;
-        if (tail < o || !b[tail..(tail + o)].SequenceEqual(b[..o]) || b[b.Length - 14] != 0x01 || b[b.Length - 13] != 0x00)
-            return false;
-        var x = BinaryPrimitives.ReadSingleLittleEndian(b[^12..]);
-        var y = BinaryPrimitives.ReadSingleLittleEndian(b[^8..]);
-        var z = BinaryPrimitives.ReadSingleLittleEndian(b[^4..]);
-        if (!float.IsFinite(x) || !float.IsFinite(y) || !float.IsFinite(z)) return false;
-        position = new EntityPosition(id, x, y, z);
         return true;
     }
 }

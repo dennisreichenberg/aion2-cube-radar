@@ -1,0 +1,364 @@
+{
+ "description": "Records carrying positions (server->client), Global build 25800038, own entity 9180. expect.entity is the entity the position belongs to (02 38: the target). expect = null: the record must not yield an own position.",
+ "self_id": 9180,
+ "records": [
+  {
+   "session": "20261013_112703",
+   "t": 1791883623330,
+   "op": "0238",
+   "src": "top",
+   "hex": "dc4700a420c700ae02c9940151abca423b9f4a466adc9fc700805b44e65601a248",
+   "expect": {
+    "entity": 19017,
+    "x": 12967.81,
+    "y": -81848.83,
+    "z": 878.0
+   },
+   "note": "target position of our own cast"
+  },
+  {
+   "session": "20261013_112703",
+   "t": 1791883623632,
+   "op": "2b38",
+   "src": "top",
+   "hex": "dc47138403e7223508102700000000000028619634a1010000dc4701171dd20002e7404a4695a19fc700405944",
+   "expect": {
+    "entity": 9180,
+    "x": 12944.23,
+    "y": -81731.16,
+    "z": 869.0
+   },
+   "note": "own position"
+  },
+  {
+   "session": "20261013_112703",
+   "t": 1791883623680,
+   "op": "0238",
+   "src": "top",
+   "hex": "8abe0200389c12000102dc4797a966c1e7404a4695a19fc700405944904e01e807",
+   "expect": {
+    "entity": 9180,
+    "x": 12944.23,
+    "y": -81731.16,
+    "z": 869.0
+   },
+   "note": "own position (we are the target)"
+  },
+  {
+   "session": "20261013_112703",
+   "t": 1791883623680,
+   "op": "0238",
+   "src": "top",
+   "hex": "c9940100389c12000102dc4782aaca42e7404a4695a19fc700405944904e01e807",
+   "expect": {
+    "entity": 9180,
+    "x": 12944.23,
+    "y": -81731.16,
+    "z": 869.0
+   },
+   "note": "own position (we are the target)"
+  },
+  {
+   "session": "20261013_112703",
+   "t": 1791883623734,
+   "op": "2b38",
+   "src": "top",
+   "hex": "dc4713f902b10cf507b80b00000000000034469634a1010000dc470178b4cb0002e7404a4695a19fc700405944",
+   "expect": {
+    "entity": 9180,
+    "x": 12944.23,
+    "y": -81731.16,
+    "z": 869.0
+   },
+   "note": "own position"
+  },
+  {
+   "session": "20261013_112703",
+   "t": 1791883623779,
+   "op": "0238",
+   "src": "top",
+   "hex": "dc4700f032c800b102dc47f9270d42e7404a4695a19fc7c6565a44e6560100",
+   "expect": {
+    "entity": 9180,
+    "x": 12944.23,
+    "y": -81731.16,
+    "z": 873.36
+   },
+   "note": "own position (self-cast)"
+  },
+  {
+   "session": "20261013_112703",
+   "t": 1791883624281,
+   "op": "0238",
+   "src": "top",
+   "hex": "dc470032b6cb00b402c994017f559dc23b9f4a466adc9fc700805b44e65601f823",
+   "expect": {
+    "entity": 19017,
+    "x": 12967.81,
+    "y": -81848.83,
+    "z": 878.0
+   },
+   "note": "target position of our own cast"
+  },
+  {
+   "session": "20261013_112703",
+   "t": 1791883624531,
+   "op": "0e38",
+   "src": "top",
+   "hex": "8abe0202dc47389c120001b1b4e80536dc4946dd939fc700c07a4401000000010001ca524946ef999fc700c07a44",
+   "expect": {
+    "entity": 9180,
+    "x": 12919.05,
+    "y": -81703.73,
+    "z": 1003.0
+   },
+   "note": "own position"
+  },
+  {
+   "session": "20261013_112703",
+   "t": 1791883624531,
+   "op": "0e38",
+   "src": "top",
+   "hex": "c9940102dc47389c120001b1b4e80583724a4633a19fc700007e4401000000010001a9714a46fbbf9fc700007e44",
+   "expect": {
+    "entity": 9180,
+    "x": 12956.63,
+    "y": -81730.4,
+    "z": 1016.0
+   },
+   "note": "own position"
+  },
+  {
+   "session": "20261013_112703",
+   "t": 1791883624531,
+   "op": "2a38",
+   "src": "top",
+   "hex": "dc4701119003e8030000881300000000000023519634a1010000dc470100b3984a46a2799fc7513e5944",
+   "expect": {
+    "entity": 9180,
+    "x": 12966.17,
+    "y": -81651.27,
+    "z": 868.97
+   },
+   "note": "own position"
+  },
+  {
+   "session": "20261013_112703",
+   "t": 1791883624531,
+   "op": "2a38",
+   "src": "top",
+   "hex": "dc4701119103ee030000881300000000000023519634a1010000dc470100b3984a46a2799fc7513e5944",
+   "expect": {
+    "entity": 9180,
+    "x": 12966.17,
+    "y": -81651.27,
+    "z": 868.97
+   },
+   "note": "own position"
+  },
+  {
+   "session": "20261013_112703",
+   "t": 1791883624781,
+   "op": "0238",
+   "src": "top",
+   "hex": "dc4700c4d3c600b802dc4789ff9fc25bdf494668549fc740a35744e6560100",
+   "expect": {
+    "entity": 9180,
+    "x": 12919.84,
+    "y": -81576.81,
+    "z": 862.55
+   },
+   "note": "own position (self-cast)"
+  },
+  {
+   "session": "20261013_112703",
+   "t": 1791883630383,
+   "op": "0238",
+   "src": "top",
+   "hex": "dc4700a55dc600b902dc47f907aec24223bc406fa7c7c200000000904e01f403",
+   "expect": null,
+   "note": "own cast whose kind-2 floats are a small vector, not a world position: must be rejected"
+  },
+  {
+   "session": "20261013_112703",
+   "t": 1791883635280,
+   "op": "0238",
+   "src": "top",
+   "hex": "dc4700a45dc600c602dc4776a0bfc100dbbb427d4309c200000000904e01f403",
+   "expect": null,
+   "note": "own cast whose kind-2 floats are a small vector, not a world position: must be rejected"
+  },
+  {
+   "session": "20261013_114345",
+   "t": 1791884627108,
+   "op": "0238",
+   "src": "top",
+   "hex": "dc4700a55dc6008e02dc47ae9cd8c2c078f9c1e606bec200000000904e01f403",
+   "expect": null,
+   "note": "own cast whose kind-2 floats are a small vector, not a world position: must be rejected"
+  },
+  {
+   "session": "20261013_114345",
+   "t": 1791884627108,
+   "op": "2a38",
+   "src": "top",
+   "hex": "dc470111c407c80000002c01000000000000fe8aa534a1010000dc4701009caa79c74e7d084800a47d46",
+   "expect": {
+    "entity": 9180,
+    "x": -63914.61,
+    "y": 139765.22,
+    "z": 16233.0
+   },
+   "note": "own position"
+  },
+  {
+   "session": "20261013_114345",
+   "t": 1791884632606,
+   "op": "2b38",
+   "src": "top",
+   "hex": "9360138806b393d70a6009000000000000ada8a534a101000093600ac58e150102ff6169c7983c0448002c8246",
+   "expect": {
+    "entity": 12307,
+    "x": -59746.0,
+    "y": 135410.38,
+    "z": 16662.0
+   },
+   "note": "other entity's position"
+  },
+  {
+   "session": "20261013_114345",
+   "t": 1791884633607,
+   "op": "2b38",
+   "src": "top",
+   "hex": "9360138806b393d70a600900000000000095aca534a101000093600ac58e150102ff6169c7983c0448002c8246",
+   "expect": {
+    "entity": 12307,
+    "x": -59746.0,
+    "y": 135410.38,
+    "z": 16662.0
+   },
+   "note": "other entity's position"
+  },
+  {
+   "session": "20261013_114345",
+   "t": 1791884643257,
+   "op": "0238",
+   "src": "top",
+   "hex": "dc4700a485c6008f02dc477a9883c2e8f766c7e3df0148a2538446e6560100",
+   "expect": {
+    "entity": 9180,
+    "x": -59127.91,
+    "y": 132991.55,
+    "z": 16937.82
+   },
+   "note": "own position (self-cast)"
+  },
+  {
+   "session": "20261013_114345",
+   "t": 1791884648609,
+   "op": "0238",
+   "src": "top",
+   "hex": "dc4700a55dc6009002dc47f508e9c2e07a32c296fcb2c200000000904e01f403",
+   "expect": null,
+   "note": "own cast whose kind-2 floats are a small vector, not a world position: must be rejected"
+  },
+  {
+   "session": "20261013_114345",
+   "t": 1791884648609,
+   "op": "2a38",
+   "src": "top",
+   "hex": "dc470111c507c80000002c01000000000000fadea534a1010000dc4701005dca6ac7dab6ff4700388146",
+   "expect": {
+    "entity": 9180,
+    "x": -60106.36,
+    "y": 130925.7,
+    "z": 16540.0
+   },
+   "note": "own position"
+  },
+  {
+   "session": "20261013_114345",
+   "t": 1791884660557,
+   "op": "2a38",
+   "src": "top",
+   "hex": "963501139611abf8290b88130000000000000320a634a101000096350111cc1d01004a7b73c7a3bfeb47e55c8e46",
+   "expect": {
+    "entity": 3788,
+    "x": -62331.29,
+    "y": 120703.27,
+    "z": 18222.45
+   },
+   "note": "other entity's position"
+  },
+  {
+   "session": "20261013_114345",
+   "t": 1791884660658,
+   "op": "0238",
+   "src": "top",
+   "hex": "963500d0dc1501bd02d882013df08441581373c7e8d7eb4700588e46a45801a09c01",
+   "expect": {
+    "entity": 16728,
+    "x": -62227.34,
+    "y": 120751.81,
+    "z": 18220.0
+   },
+   "note": "other entity's position"
+  },
+  {
+   "session": "20261013_114345",
+   "t": 1791884660857,
+   "op": "0e38",
+   "src": "top",
+   "hex": "82df01029635aead120002cd91eb05fc7073c7d5b5eb4717678f460100000001000148f072c7de4feb47468f8f46",
+   "expect": {
+    "entity": 6806,
+    "x": -62320.98,
+    "y": 120683.66,
+    "z": 18355.54
+   },
+   "note": "other entity's position"
+  },
+  {
+   "session": "20261013_114345",
+   "t": 1791884661061,
+   "op": "2a38",
+   "src": "top",
+   "hex": "d8820101130137e2f505b80b000000000000271aa634a1010000963501d0dc150100558673c7bfc6eb4700588e46",
+   "expect": {
+    "entity": 355920,
+    "x": -62342.33,
+    "y": 120717.49,
+    "z": 18220.0
+   },
+   "note": "other entity's position"
+  },
+  {
+   "session": "20261013_114345",
+   "t": 1791884661107,
+   "op": "0238",
+   "src": "top",
+   "hex": "963500ca441301be02963536593a42908573c7dcc6eb47465d8e46a4580100",
+   "expect": {
+    "entity": 6806,
+    "x": -62341.56,
+    "y": 120717.72,
+    "z": 18222.64
+   },
+   "note": "other entity's position"
+  },
+  {
+   "session": "20261013_114345",
+   "t": 1791884756858,
+   "op": "0238",
+   "src": "top",
+   "hex": "dc4700a485c6009302dc47a6565642725d8bc7a6fec84727de7046e6560100",
+   "expect": {
+    "entity": 9180,
+    "x": -71354.89,
+    "y": 102909.3,
+    "z": 15415.54
+   },
+   "note": "own position (self-cast)"
+  }
+ ]
+}
