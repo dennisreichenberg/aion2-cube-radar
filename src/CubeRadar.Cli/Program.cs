@@ -62,7 +62,7 @@ int Usage()
             --no-record        do not record raw.pcapng into captures/radar_<date_time>/
             --no-hotkeys, --hotkeys SPEC, --no-beep   as for 'dump live' (beep also on new cubes)
             --no-browser       do not open the browser
-            --no-overlay       no always-on-top overlay (Ctrl+Shift+F10 on/off, Ctrl+Shift+F11 move)
+            --no-overlay       no mini radar overlay (Ctrl+Shift+F10 on/off, F11 move, F12 range)
 
         Console during 'dump live': Enter = marker (text optional), 1-5 = the hotkey markers, q = stop.
         """);

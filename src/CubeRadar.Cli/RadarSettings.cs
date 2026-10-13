@@ -17,6 +17,7 @@ internal sealed class RadarSettings
     public int? OverlayX { get; set; }
     public int? OverlayY { get; set; }
     public bool OverlayVisible { get; set; } = true;
+    public int OverlayRangeM { get; set; } = 120;
 
     public static RadarSettings Load(string path)
     {

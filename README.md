@@ -50,10 +50,14 @@ Die ausführbare Datei liegt dann unter `src\CubeRadar.Cli\bin\Release\net10.0-w
   Die Konsole piept zusätzlich (abschalten mit `--no-beep`).
 - **Eigene Position:** Sie kommt nur bei Ereignissen, etwa wenn du Buffs wirkst oder angegriffen wirst. Die Kopfzeile
   zeigt, wie alt sie ist. Ohne frische Position zeigt das Radar eine Schätzung mit Unsicherheitskreis.
-- **Overlay über dem Spiel:** Ein kleines Fenster liegt immer im Vordergrund und ist klick-durchlässig. Es zeigt die
-  bis zu 3 nächsten aktiven Cubes mit Richtungspfeil (Norden oben), Entfernung, Himmelsrichtung und Höhe sowie das
-  Alter deiner Position.
+- **Mini-Radar über dem Spiel (Overlay):** Ein kleines Fenster liegt immer im Vordergrund und ist klick-durchlässig.
+  - Inhalt: Norden oben, du in der Mitte, Ringe, Sichtweite (~100 m) gestrichelt und deine letzte Laufspur. Die Spur
+    zeigt, woher du kommst, weil das Spiel keine Blickrichtung sendet.
+  - Cubes erscheinen als ▲/▼/■ (über, unter oder auf deiner Höhe) mit „86 m ▲38“. Liegt ein Cube außerhalb des Zooms,
+    zeigt ein »-Zeiger am Rand in seine Richtung.
+  - Die Kopfzeile zeigt das Alter deiner Position und den Zoom.
   - `Strg+Umschalt+F10` blendet es ein und aus.
+  - `Strg+Umschalt+F12` schaltet den Zoom durch (60 / 120 / 250 m).
   - `Strg+Umschalt+F11` entsperrt es: Dann kannst du es mit der Maus ziehen. Ein zweiter Druck sperrt es wieder und
     speichert die Position.
   - Das Spiel muss im Fenster- oder randlosen Vollbildmodus laufen; über exklusivem Vollbild kann nichts zeichnen.

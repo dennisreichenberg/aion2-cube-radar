@@ -8,15 +8,17 @@ using CubeRadar.Core.Radar;
 namespace CubeRadar.Cli;
 
 /// <summary>
-/// Small always-on-top, click-through window over the game: the nearest live cubes with direction, distance and
-/// height. It never takes focus. Ctrl+Shift+F10 shows/hides it, Ctrl+Shift+F11 unlocks it for dragging (position is
-/// saved when locking again). Works over windowed / borderless games; nothing can draw over exclusive fullscreen.
+/// Small always-on-top, click-through mini radar over the game: north up, we in the middle, live cubes with distance
+/// and height, our recent trail. It never takes focus. Ctrl+Shift+F10 shows/hides it, Ctrl+Shift+F11 unlocks it for
+/// dragging (position saved when locking again), Ctrl+Shift+F12 cycles the range. Works over windowed / borderless
+/// games; nothing can draw over exclusive fullscreen.
 /// </summary>
 internal sealed class OverlayWindow : Form
 {
     private const int WsExLayered = 0x80000, WsExTransparent = 0x20, WsExToolWindow = 0x80, WsExNoActivate = 0x08000000, WsExTopmost = 0x8;
     private const int GwlExStyle = -20;
     private static readonly IntPtr HwndTopmost = new(-1);
+    public static readonly int[] Ranges = [60, 120, 250];
 
     private readonly Func<RadarSnapshot> _snapshot;
     private readonly RadarSettings _settings;
@@ -38,7 +40,7 @@ internal sealed class OverlayWindow : Form
         DoubleBuffered = true;
         Text = "Cube Radar Overlay";
         var scale = DeviceDpi / 96f;
-        Size = OverlayRenderer.Measure(null, scale);
+        Size = OverlayRenderer.Measure(scale);
         var screen = Screen.PrimaryScreen!.WorkingArea;
         var x = settings.OverlayX ?? screen.Right - Width - (int)(24 * scale);
         var y = settings.OverlayY ?? screen.Top + (int)(300 * scale);
@@ -108,6 +110,14 @@ internal sealed class OverlayWindow : Form
         Invalidate();
     });
 
+    public void CycleRange() => Ui(() =>
+    {
+        var i = Array.IndexOf(Ranges, _settings.OverlayRangeM);
+        _settings.OverlayRangeM = Ranges[(i + 1) % Ranges.Length];
+        _settings.Save();
+        Invalidate();
+    });
+
     public void Shutdown() => Ui(() =>
     {
         Close();
@@ -124,15 +134,13 @@ internal sealed class OverlayWindow : Form
     private void Tick()
     {
         _last = _snapshot();
-        var size = OverlayRenderer.Measure(_last, DeviceDpi / 96f);
-        if (size != Size) Size = size;
         // Some games push themselves to the top when they regain focus: re-assert every 2 s.
         if (++_ticks % 8 == 0 && Visible) SetWindowPos(Handle, HwndTopmost, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010);
         Invalidate();
     }
 
     protected override void OnPaint(PaintEventArgs e) =>
-        OverlayRenderer.Render(e.Graphics, ClientSize, _last, DeviceDpi / 96f, _unlocked);
+        OverlayRenderer.Render(e.Graphics, ClientSize, _last, DeviceDpi / 96f, _settings.OverlayRangeM, _unlocked);
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
@@ -160,84 +168,123 @@ internal sealed class OverlayWindow : Form
 
 internal static class Palette
 {
-    public static readonly Color Background = Color.FromArgb(16, 20, 26);
+    public static readonly Color Background = Color.FromArgb(14, 18, 23);
     public static readonly Color Text = Color.FromArgb(230, 235, 240);
     public static readonly Color Muted = Color.FromArgb(139, 150, 163);
-    public static readonly Color Line = Color.FromArgb(52, 62, 74);
+    public static readonly Color Line = Color.FromArgb(48, 58, 70);
     public static readonly Color Visible = Color.FromArgb(61, 220, 132);
     public static readonly Color OutOfView = Color.FromArgb(242, 179, 61);
     public static readonly Color Opening = Color.FromArgb(255, 225, 77);
     public static readonly Color Me = Color.FromArgb(77, 163, 255);
-    public static readonly Color Up = Color.FromArgb(124, 196, 255);
-    public static readonly Color Down = Color.FromArgb(255, 159, 107);
     public static readonly Color Warn = Color.FromArgb(255, 107, 91);
 }
 
-/// <summary>Draws the overlay content; also used to render a PNG for checking the layout.</summary>
+/// <summary>Draws the mini radar; also used to render a PNG for checking the layout.</summary>
 internal static class OverlayRenderer
 {
-    private const int MaxRows = 3, Width = 300, Header = 26, Row = 34, Pad = 8;
-    private const double LevelMetres = 3;
+    private const float Side = 230, Header = 22, Margin = 14;
+    private const double LevelMetres = 3, SendRadiusM = 100;
 
-    public static List<CubeView> Rows(RadarSnapshot? s) =>
-        s is null
-            ? []
-            : s.Cubes.Where(c => c.Status is nameof(CubeStatus.Visible) or nameof(CubeStatus.Opening) or nameof(CubeStatus.OutOfView))
-                .OrderBy(c => c.Status == nameof(CubeStatus.OutOfView) ? 1 : 0)
-                .ThenBy(c => c.DistanceM ?? double.MaxValue)
-                .Take(MaxRows)
-                .ToList();
+    public static Size Measure(float scale) => new((int)(Side * scale), (int)((Side + Header) * scale));
 
-    public static Size Measure(RadarSnapshot? s, float scale)
-    {
-        var rows = Math.Max(1, Rows(s).Count);
-        return new Size((int)(Width * scale), (int)((Header + rows * Row + Pad) * scale));
-    }
-
-    public static void Render(Graphics g, Size size, RadarSnapshot? s, float scale, bool unlocked)
+    public static void Render(Graphics g, Size size, RadarSnapshot? s, float scale, int rangeM, bool unlocked)
     {
         g.SmoothingMode = SmoothingMode.AntiAlias;
         g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
         g.Clear(Palette.Background);
         g.ScaleTransform(scale, scale);
-        var w = size.Width / scale;
-        var h = size.Height / scale;
 
-        using var small = new Font("Segoe UI", 8.5f, FontStyle.Bold, GraphicsUnit.Point);
-        using var label = new Font("Segoe UI", 9.5f, FontStyle.Regular, GraphicsUnit.Point);
-        using var big = new Font("Segoe UI", 13f, FontStyle.Bold, GraphicsUnit.Point);
+        using var small = new Font("Segoe UI", 8f, FontStyle.Bold, GraphicsUnit.Point);
+        using var label = new Font("Segoe UI", 8.5f, FontStyle.Bold, GraphicsUnit.Point);
+        using var tiny = new Font("Segoe UI", 7f, FontStyle.Regular, GraphicsUnit.Point);
 
         using (var border = new Pen(unlocked ? Palette.Warn : Palette.Line, unlocked ? 2 : 1) { DashStyle = unlocked ? DashStyle.Dash : DashStyle.Solid })
-            g.DrawRectangle(border, 0.5f, 0.5f, w - 1, h - 1);
+            g.DrawRectangle(border, 0.5f, 0.5f, Side - 1, Side + Header - 1);
 
-        Text(g, "CUBE RADAR", small, Palette.Muted, Pad, 5);
-        if (unlocked)
+        // header: name, own position age, range
+        Text(g, "CUBE RADAR", small, Palette.Muted, 7, 4);
+        Text(g, $"{rangeM} m", small, Palette.Muted, Side - 7, 4, right: true);
+        var me = Me(s);
+        if (s is not null)
         {
-            Text(g, "ziehen · Strg+Umschalt+F11 = fest", small, Palette.Warn, w - Pad, 5, right: true);
-        }
-        else if (s is not null)
-        {
-            var (posText, posColor) = s switch
+            var (posText, posColor) = me switch
             {
-                { Ring: { } r } when s.Self is null || r.TimeMs > s.Self.TimeMs => ($"Pos. ± {r.Uncertainty / 100:0} m", Palette.OutOfView),
-                { Self: { } f } => ($"Pos. vor {f.AgeMs / 1000} s", f.AgeMs <= s.FixFreshSeconds * 1000 ? Palette.Visible : f.AgeMs <= 30_000 ? Palette.OutOfView : Palette.Warn),
-                _ => ("Pos. unbekannt", Palette.Warn),
+                { Ring: > 0 } m => ($"± {m.Ring / 100:0} m", Palette.OutOfView),
+                { } m => ($"Pos. {m.AgeMs / 1000} s", m.AgeMs <= s.FixFreshSeconds * 1000 ? Palette.Visible : m.AgeMs <= 30_000 ? Palette.OutOfView : Palette.Warn),
+                null => ("Pos. ?", Palette.Warn),
             };
             var tw = g.MeasureString(posText, small).Width;
-            Text(g, posText, small, Palette.Muted, w - Pad, 5, right: true);
+            var px = Side / 2 - tw / 2 + 5;
             using var dot = new SolidBrush(posColor);
-            g.FillEllipse(dot, w - Pad - tw - 8, 10, 7, 7);
+            g.FillEllipse(dot, px - 10, 9, 6, 6);
+            Text(g, posText, small, Palette.Muted, px, 4);
         }
 
-        var rows = Rows(s);
-        if (rows.Count == 0)
+        var cx = Side / 2;
+        var cy = Header + Side / 2;
+        var r = Side / 2 - Margin;
+        var px2world = r / (rangeM * 100f); // pixels per game unit
+
+        // rings, cross, north
+        using (var ring = new Pen(Palette.Line, 1))
         {
-            Text(g, s is null ? "wartet auf Daten …" : "kein Cube in Sichtweite", label, Palette.Muted, Pad + 2, Header + 7);
+            g.DrawEllipse(ring, cx - r, cy - r, 2 * r, 2 * r);
+            g.DrawEllipse(ring, cx - r / 2, cy - r / 2, r, r);
+            g.DrawLine(ring, cx - r, cy, cx + r, cy);
+            g.DrawLine(ring, cx, cy - r, cx, cy + r);
+        }
+        Text(g, $"{rangeM / 2} m", tiny, Palette.Muted, cx + 3, cy - r / 2 - 12);
+        Text(g, "N", small, Palette.Text, cx - 4, cy - r - 13);
+        if (SendRadiusM < rangeM)
+        {
+            using var send = new Pen(Color.FromArgb(110, Palette.Me), 1) { DashStyle = DashStyle.Dash };
+            var sr = (float)(SendRadiusM * 100 * px2world);
+            g.DrawEllipse(send, cx - sr, cy - sr, 2 * sr, 2 * sr);
+        }
+
+        if (s is null || me is null)
+        {
+            Text(g, s is null ? "wartet auf Daten …" : "eigene Position unbekannt", label, Palette.Muted, cx, cy + r / 2, center: true);
+            if (s is not null) Text(g, "(Buff wirken hilft)", tiny, Palette.Muted, cx, cy + r / 2 + 16, center: true);
             return;
         }
 
-        var y = (float)Header;
-        foreach (var c in rows)
+        var o = s.Orientation;
+        PointF ToScreen(double x, double y)
+        {
+            double dx = x - me.X, dy = y - me.Y;
+            var n = dx * o.NorthX + dy * o.NorthY;
+            var e = dx * o.EastX + dy * o.EastY;
+            return new PointF(cx + (float)(e * px2world), cy - (float)(n * px2world));
+        }
+
+        // own trail (last ~2 minutes): shows where we came from, i.e. roughly where we are heading
+        using (var trail = new Pen(Color.FromArgb(90, Palette.Me), 1.5f))
+        {
+            PointF? prev = null;
+            foreach (var p in s.Trail.TakeLast(40))
+            {
+                if (p.Length < 2) { prev = null; continue; }
+                var q = ToScreen(p[0], p[1]);
+                if (prev is { } a && Inside(a, cx, cy, r) && Inside(q, cx, cy, r)) g.DrawLine(trail, a, q);
+                prev = q;
+            }
+        }
+
+        // us
+        if (me.Ring > 0)
+        {
+            using var unc = new Pen(Color.FromArgb(140, Palette.Me), 1) { DashStyle = DashStyle.Dot };
+            var ur = Math.Max(4f, (float)(me.Ring * px2world));
+            g.DrawEllipse(unc, cx - ur, cy - ur, 2 * ur, 2 * ur);
+        }
+        using (var meBrush = new SolidBrush(me.AgeMs <= s.FixFreshSeconds * 1000 ? Palette.Me : Color.FromArgb(130, Palette.Me)))
+            g.FillEllipse(meBrush, cx - 4.5f, cy - 4.5f, 9, 9);
+
+        // cubes, nearest drawn last (on top)
+        var live = s.Cubes.Where(c => c.Status is nameof(CubeStatus.Visible) or nameof(CubeStatus.Opening) or nameof(CubeStatus.OutOfView))
+            .OrderByDescending(c => c.DistanceM ?? double.MaxValue).ToList();
+        foreach (var c in live)
         {
             var color = c.Status switch
             {
@@ -245,59 +292,89 @@ internal static class OverlayRenderer
                 nameof(CubeStatus.Opening) => Palette.Opening,
                 _ => Palette.OutOfView,
             };
-            var cx = Pad + 13f;
-            var cy = y + Row / 2f;
-            using (var ring = new Pen(Palette.Line, 1.2f)) g.DrawEllipse(ring, cx - 13, cy - 13, 26, 26);
-            if (c.Bearing is { } b) Arrow(g, cx, cy, (float)b, color);
-            else Text(g, "?", label, Palette.Muted, cx - 4, cy - 9);
-
-            var x = Pad + 34f;
-            var dist = c.DistanceM is { } d ? $"{d:0} m" : "? m";
-            Text(g, dist, big, color, x, cy - 13);
-            x += g.MeasureString(dist, big).Width + 2;
-            if (c.Compass is { } compass && c.Bearing is { } bearing)
+            var dist = Math.Sqrt(Math.Pow(c.X - me.X, 2) + Math.Pow(c.Y - me.Y, 2)) / 100;
+            (string Kind, string Text) height = c.DzUnits is { } dz
+                ? Math.Abs(dz / 100) <= LevelMetres ? ("level", "≈") : dz > 0 ? ("up", $"▲{dz / 100:0}") : ("down", $"▼{-dz / 100:0}")
+                : ("level", "");
+            var text = $"{dist:0} m {height.Text}".Trim();
+            var p = ToScreen(c.X, c.Y);
+            if (Inside(p, cx, cy, r - 4))
             {
-                var dir = $"{compass} {bearing:0}°";
-                Text(g, dir, label, Palette.Text, x, cy - 9);
-                x += g.MeasureString(dir, label).Width + 6;
+                Marker(g, p.X, p.Y, 6.5f, height.Kind, color, filled: c.Status != nameof(CubeStatus.OutOfView));
+                var lx = p.X + 9;
+                if (lx + g.MeasureString(text, label).Width > Side - 3) lx = p.X - 9 - g.MeasureString(text, label).Width;
+                Text(g, text, label, color, lx, p.Y - 8);
             }
-
-            var (heightText, heightColor) = c.DzUnits is { } dz
-                ? Math.Abs(dz / 100) <= LevelMetres ? ("≈ gleich", Palette.Muted)
-                : dz > 0 ? ($"▲ {dz / 100:0} m", Palette.Up) : ($"▼ {-dz / 100:0} m", Palette.Down)
-                : ("Höhe ?", Palette.Muted);
-            Text(g, heightText, label, heightColor, w - Pad, cy - 9, right: true);
-            if (c.Status == nameof(CubeStatus.OutOfView)) Text(g, "außer Sicht", small, Palette.OutOfView, x, cy + 5);
-            else if (c.Status == nameof(CubeStatus.Opening)) Text(g, "wird geöffnet!", small, Palette.Opening, x, cy + 5);
-            y += Row;
+            else
+            {
+                // beyond the range: an open chevron on the rim (not a filled triangle, which would read as ▲/▼ height)
+                var a = Math.Atan2(p.Y - cy, p.X - cx);
+                var ax = cx + (float)Math.Cos(a) * (r - 7);
+                var ay = cy + (float)Math.Sin(a) * (r - 7);
+                var state = g.Save();
+                g.TranslateTransform(ax, ay);
+                g.RotateTransform((float)(a * 180 / Math.PI));
+                using (var chevron = new Pen(color, 2.5f) { LineJoin = LineJoin.Round, StartCap = LineCap.Round, EndCap = LineCap.Round })
+                {
+                    g.DrawLines(chevron, [new PointF(-4, -7), new PointF(5, 0), new PointF(-4, 7)]);
+                    g.DrawLines(chevron, [new PointF(-10, -7), new PointF(-1, 0), new PointF(-10, 7)]);
+                }
+                g.Restore(state);
+                var tx = cx + (float)Math.Cos(a) * (r - 30);
+                var ty = cy + (float)Math.Sin(a) * (r - 22);
+                Text(g, text, label, color, tx, ty - 7, center: true);
+            }
         }
     }
 
-    private static void Arrow(Graphics g, float cx, float cy, float bearing, Color color)
+    private sealed record MeView(double X, double Y, long AgeMs, double Ring);
+
+    /// <summary>Our position: the later of real fix and ring estimate (as in the web UI).</summary>
+    private static MeView? Me(RadarSnapshot? s)
     {
-        var state = g.Save();
-        g.TranslateTransform(cx, cy);
-        g.RotateTransform(bearing); // 0° = up = north
-        using var brush = new SolidBrush(color);
-        g.FillPolygon(brush, [new PointF(0, -10), new PointF(6, 6), new PointF(0, 2.5f), new PointF(-6, 6)]);
-        g.Restore(state);
-        using var tick = new SolidBrush(Palette.Muted);
-        g.FillRectangle(tick, cx - 0.75f, cy - 13, 1.5f, 3); // north tick
+        if (s is null) return null;
+        if (s.Ring is { } r && (s.Self is null || r.TimeMs > s.Self.TimeMs)) return new MeView(r.X, r.Y, r.AgeMs, r.Uncertainty);
+        return s.Self is { } f ? new MeView(f.X, f.Y, f.AgeMs, 0) : null;
     }
 
-    private static void Text(Graphics g, string text, Font font, Color color, float x, float y, bool right = false)
+    private static bool Inside(PointF p, float cx, float cy, float r) => (p.X - cx) * (p.X - cx) + (p.Y - cy) * (p.Y - cy) <= r * r;
+
+    /// <summary>Square for "same height", triangle up / down for above / below us.</summary>
+    private static void Marker(Graphics g, float x, float y, float s, string kind, Color color, bool filled)
+    {
+        PointF[] pts = kind switch
+        {
+            "up" => [new(x, y - s), new(x + s, y + s * 0.8f), new(x - s, y + s * 0.8f)],
+            "down" => [new(x, y + s), new(x + s, y - s * 0.8f), new(x - s, y - s * 0.8f)],
+            _ => [new(x - s * 0.8f, y - s * 0.8f), new(x + s * 0.8f, y - s * 0.8f), new(x + s * 0.8f, y + s * 0.8f), new(x - s * 0.8f, y + s * 0.8f)],
+        };
+        if (filled)
+        {
+            using var brush = new SolidBrush(color);
+            g.FillPolygon(brush, pts);
+        }
+        else
+        {
+            using var pen = new Pen(color, 2);
+            g.DrawPolygon(pen, pts);
+        }
+    }
+
+    private static void Text(Graphics g, string text, Font font, Color color, float x, float y, bool right = false, bool center = false)
     {
         using var brush = new SolidBrush(color);
-        if (right) x -= g.MeasureString(text, font).Width;
+        var w = g.MeasureString(text, font).Width;
+        if (right) x -= w;
+        else if (center) x -= w / 2;
         g.DrawString(text, font, brush, x, y);
     }
 
     /// <summary>One frame as PNG (for checking the layout without a game).</summary>
-    public static void SavePng(string path, RadarSnapshot? s, float scale = 1.5f)
+    public static void SavePng(string path, RadarSnapshot? s, int rangeM = 120, float scale = 1.5f)
     {
-        var size = Measure(s, scale);
+        var size = Measure(scale);
         using var bmp = new Bitmap(size.Width, size.Height);
-        using (var g = Graphics.FromImage(bmp)) Render(g, size, s, scale, unlocked: false);
+        using (var g = Graphics.FromImage(bmp)) Render(g, size, s, scale, rangeM, unlocked: false);
         bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
     }
 }

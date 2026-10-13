@@ -187,10 +187,15 @@ internal static class RadarCommand
         if (!a.Contains("--no-overlay"))
         {
             overlay = OverlayWindow.Start(engine.Snapshot, settings);
-            overlayKeys = new GlobalHotkeys(GlobalHotkeys.Parse("ctrl+shift+F10=overlay,ctrl+shift+F11=overlay_lock"),
-                b => { if (b.Label == "overlay") overlay.ToggleVisible(); else overlay.ToggleLock(); });
+            overlayKeys = new GlobalHotkeys(GlobalHotkeys.Parse("ctrl+shift+F10=overlay on/off,ctrl+shift+F11=overlay move/lock,ctrl+shift+F12=overlay range"),
+                b =>
+                {
+                    if (b.Label.EndsWith("on/off")) overlay.ToggleVisible();
+                    else if (b.Label.EndsWith("lock")) overlay.ToggleLock();
+                    else overlay.CycleRange();
+                });
             foreach (var (b, ok, err) in overlayKeys.Results)
-                Console.WriteLine($"  hotkey {b.Display,-16} → {(b.Label == "overlay" ? "overlay on/off" : "overlay move/lock"),-18} {(ok ? "ok" : $"NOT registered (error {err})")}");
+                Console.WriteLine($"  hotkey {b.Display,-16} → {b.Label,-18} {(ok ? "ok" : $"NOT registered (error {err})")}");
         }
 
         if (replay is null)
@@ -223,7 +228,7 @@ internal static class RadarCommand
                 Log(replayState + " · press q + Enter to quit");
                 if (overlayPng is not null)
                 {
-                    OverlayRenderer.SavePng(overlayPng, engine.Snapshot());
+                    OverlayRenderer.SavePng(overlayPng, engine.Snapshot(), settings.OverlayRangeM);
                     Log($"overlay frame: {overlayPng}");
                 }
                 hub.Kick();

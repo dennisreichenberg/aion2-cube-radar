@@ -393,3 +393,7 @@ Interaktionsreichweite (≈ 2 m, B7).
   - Die Nordrichtung liegt jetzt serverseitig (`POST /api/north`, `data/settings.json`) und gilt für Web-UI und
     Overlay gleichermaßen.
   - B12 ergänzt: Verpasste Cubes waren nicht unerkannt, andere Spieler öffneten sie nach 18–20 s.
+- **2026-10-13 (Radar 0.4.1):** Das Overlay ist jetzt ein Mini-Radar.
+  - Norden oben, du in der Mitte, Ringe, Sichtweite, deine Laufspur.
+  - Cubes als ▲/▼/■ mit Entfernung und Höhe; außerhalb des Zooms ein »-Zeiger am Rand.
+  - Zoom 60 / 120 / 250 m (Strg+Umschalt+F12), wird in `data/settings.json` gespeichert.
