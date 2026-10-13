@@ -31,6 +31,12 @@ internal static class RadarCommand
         var speed = Opt("--speed") is { } sp ? double.Parse(sp, CultureInfo.InvariantCulture) : 1.0;
         var stopAt = Opt("--stop-at") is { } sa ? double.Parse(sa, CultureInfo.InvariantCulture) : double.MaxValue;
         var beep = !a.Contains("--no-beep");
+        var overlayOnly = a.Contains("--overlay-only");
+        if (overlayOnly && a.Contains("--no-overlay"))
+        {
+            Console.Error.WriteLine("--overlay-only and --no-overlay exclude each other.");
+            return 2;
+        }
         if (replay is not null && !File.Exists(replay))
         {
             Console.Error.WriteLine($"not found: {replay}");
@@ -171,11 +177,12 @@ internal static class RadarCommand
         });
         app.StartAsync().GetAwaiter().GetResult();
         var url = $"http://127.0.0.1:{port}/";
+        if (overlayOnly) HideConsole(dir is null ? Path.Combine(Path.GetTempPath(), $"cuberadar_{stamp}.log") : Path.Combine(dir, "radar.log"));
         Console.WriteLine($"radar: {url}");
         if (dir is not null) Console.WriteLine($"session: {dir}");
         Console.WriteLine($"cube templates: {string.Join(", ", engine.Templates.Select(t => $"{t.Template} {t.Zone} ({t.Status})"))}");
         Console.WriteLine(spots is null ? "spot list: none (optional, see config/radar.json spots_csv)" : $"spot list: {spots.All.Count} spots");
-        if (!a.Contains("--no-browser")) TryOpen(url);
+        if (!a.Contains("--no-browser") && !overlayOnly) TryOpen(url);
 
         // ---------------------------------------------------------------- capture
         var bindings = replay is not null || a.Contains("--no-hotkeys") ? [] : GlobalHotkeys.Parse(Opt("--hotkeys") ?? GlobalHotkeys.DefaultSpec);
@@ -187,6 +194,7 @@ internal static class RadarCommand
         if (!a.Contains("--no-overlay"))
         {
             overlay = OverlayWindow.Start(engine.Snapshot, settings);
+            overlay.ShowTray(() => TryOpen(url), stop.Set);
             overlayKeys = new GlobalHotkeys(GlobalHotkeys.Parse("ctrl+shift+F10=overlay on/off,ctrl+shift+F12=overlay range"),
                 b =>
                 {
@@ -254,6 +262,22 @@ internal static class RadarCommand
     }
 
     private static void Log(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {message}");
+
+    /// <summary>Overlay-only mode: no console window; everything that would be printed goes to a log file.</summary>
+    private static void HideConsole(string logPath)
+    {
+        var log = new StreamWriter(logPath, append: true) { AutoFlush = true };
+        Console.SetOut(log);
+        Console.SetError(log);
+        var console = GetConsoleWindow();
+        if (console != IntPtr.Zero) ShowWindow(console, 0); // SW_HIDE
+    }
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern IntPtr GetConsoleWindow();
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int cmdShow);
 
     private static void TryOpen(string url)
     {

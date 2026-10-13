@@ -27,6 +27,10 @@ Set-Content -Path (Join-Path $stage "Radar starten.cmd") -Encoding ascii -Value 
     "cd /d `"%~dp0`"",
     "cuberadar.exe radar",
     "pause")
+Set-Content -Path (Join-Path $stage "Nur Overlay starten.cmd") -Encoding ascii -Value @(
+    "@echo off",
+    "cd /d `"%~dp0`"",
+    "start `"Cube Radar`" /min cuberadar.exe radar --overlay-only")
 
 # Corresponding source (GPL-3.0): the committed code, without personal data.
 git -C $root archive --format=zip -o (Join-Path $stage "source.zip") HEAD -- `

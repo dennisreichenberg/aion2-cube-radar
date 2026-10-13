@@ -404,3 +404,7 @@ Interaktionsreichweite (≈ 2 m, B7).
     `OverlayHideInMenus`). Liegt der Zeiger über dem Overlay, bleibt es sichtbar, damit man es greifen kann.
   - Dafür wird nur der Windows-Fenster- und Cursorstatus gelesen. Ob das Spiel den Cursor in der Welt wirklich
     ausblendet, muss sich beim Spielen zeigen.
+- **2026-10-13 (Radar 0.5.0):** Nur-Overlay-Modus (`radar --overlay-only`, `overlay.cmd`, im Paket „Nur Overlay
+  starten.cmd“).
+  - Kein Browser, die Konsole ist versteckt, die Ausgaben gehen nach `radar.log`.
+  - Tray-Symbol mit Overlay ein/aus, Zoom, Web-Ansicht und Beenden. Das Tray-Symbol gibt es auch im normalen Modus.

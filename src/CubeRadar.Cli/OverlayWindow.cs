@@ -32,6 +32,7 @@ internal sealed class OverlayWindow : Form
     private int[] _gamePids = [];
     private long _gamePidsAt = -10_000;
     private long _cursorShownSince = -1;
+    private NotifyIcon? _tray;
 
     public OverlayWindow(Func<RadarSnapshot> snapshot, RadarSettings settings)
     {
@@ -134,9 +135,51 @@ internal sealed class OverlayWindow : Form
 
     public void Shutdown() => Ui(() =>
     {
+        if (_tray is not null)
+        {
+            _tray.Visible = false; // otherwise a dead icon stays in the tray until the mouse passes over it
+            _tray.Dispose();
+        }
         Close();
         Application.ExitThread();
     });
+
+    /// <summary>Tray icon with a menu: overlay on/off, range, web view, quit.</summary>
+    public void ShowTray(Action openWeb, Action quit) => Ui(() =>
+    {
+        var menu = new ContextMenuStrip();
+        menu.Items.Add("Overlay ein/aus (Strg+Umschalt+F10)", null, (_, _) => ToggleVisible());
+        menu.Items.Add("Zoom wechseln (Strg+Umschalt+F12)", null, (_, _) => CycleRange());
+        menu.Items.Add("Web-Ansicht öffnen", null, (_, _) => openWeb());
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add("Beenden", null, (_, _) => quit());
+        _tray = new NotifyIcon
+        {
+            Icon = TrayGlyph(),
+            Text = "Cube Radar",
+            ContextMenuStrip = menu,
+            Visible = true,
+        };
+        _tray.DoubleClick += (_, _) => openWeb();
+    });
+
+    /// <summary>A small radar glyph: rings and a green cube.</summary>
+    private static Icon TrayGlyph()
+    {
+        using var bmp = new Bitmap(32, 32);
+        using (var g = Graphics.FromImage(bmp))
+        {
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using var bg = new SolidBrush(Palette.Background);
+            g.FillEllipse(bg, 0, 0, 31, 31);
+            using var ring = new Pen(Palette.Me, 2);
+            g.DrawEllipse(ring, 2, 2, 27, 27);
+            g.DrawEllipse(ring, 10, 10, 11, 11);
+            using var cube = new SolidBrush(Palette.Visible);
+            g.FillRectangle(cube, 19, 6, 8, 8);
+        }
+        return Icon.FromHandle(bmp.GetHicon());
+    }
 
     private void Ui(Action action)
     {

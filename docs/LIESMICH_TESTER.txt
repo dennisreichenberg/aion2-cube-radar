@@ -25,6 +25,10 @@ Starten
      Steht bei Position "unbekannt": im Spiel einmal einen Buff auf dich selbst wirken.
   Beenden: im schwarzen Konsolenfenster q eintippen und Enter.
 
+  Alternativ "Nur Overlay starten.cmd": kein Browser, kein Konsolenfenster, nur das Mini-Radar ueber dem
+  Spiel. Bedienung ueber das Radar-Symbol unten rechts in der Taskleiste (Rechtsklick): Overlay ein/aus,
+  Zoom, Web-Ansicht oeffnen, Beenden.
+
 Anzeige
   Dreieck nach oben = Cube liegt ueber dir, nach unten = unter dir, Quadrat = gleiche Hoehe (+/- 3 m).
   Rechts im Radar zeigt eine Hoehenleiste alle Cubes relativ zu deiner Hoehe. Deine Position kommt nur bei

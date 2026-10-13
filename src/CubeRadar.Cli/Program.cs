@@ -63,6 +63,8 @@ int Usage()
             --no-hotkeys, --hotkeys SPEC, --no-beep   as for 'dump live' (beep also on new cubes)
             --no-browser       do not open the browser
             --no-overlay       no mini radar overlay (drag it with the mouse; Ctrl+Shift+F10 on/off, F12 range)
+            --overlay-only     only the overlay: no browser, console hidden (log in the session folder);
+                               tray icon to open the web view or quit
 
         Console during 'dump live': Enter = marker (text optional), 1-5 = the hotkey markers, q = stop.
         """);

@@ -35,10 +35,18 @@ Die ausführbare Datei liegt dann unter `src\CubeRadar.Cli\bin\Release\net10.0-w
 ## Radar
 
 ```powershell
-.\cuberadar.cmd radar
+.\cuberadar.cmd radar      # volle Ansicht: Browser + Overlay + Konsole
+.\overlay.cmd              # nur das Overlay: kein Browser, keine Konsole, Tray-Symbol
 ```
 
-Öffnet `http://127.0.0.1:5313` im Browser.
+**Nur-Overlay-Modus** (`overlay.cmd` bzw. `radar --overlay-only`):
+- Es läuft unsichtbar im Hintergrund; sichtbar ist nur das Mini-Radar über dem Spiel.
+- Das Tray-Symbol unten rechts bietet per Rechtsklick: Overlay ein/aus, Zoom, „Web-Ansicht öffnen“ (auch per
+  Doppelklick) und „Beenden“.
+- Die Ausgaben landen in `captures\radar_<datum_zeit>\radar.log`. Aufzeichnung, Datenbank, Piepton und Marker-Hotkeys
+  laufen wie gewohnt.
+
+Die volle Ansicht öffnet `http://127.0.0.1:5313` im Browser.
 - **Radar** zeigt die Umgebung um dich (Nord oben, Ringe, Sichtweite ≈ 100 m gestrichelt).
 - **Höhe:** ▲ = Cube über dir, ▼ = unter dir, ■ = gleiche Höhe (± 3 m). Die Höhenleiste rechts im Radar zeigt deine
   Höhe als Mittellinie. In der Liste steht „▲ 38 m über dir“ usw. Ist deine Position älter als 5 s, steht ihr Alter
