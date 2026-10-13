@@ -37,7 +37,8 @@ Mini-Radar
 
 Einstellungen
   Zahnrad oben rechts im Mini-Radar (oder Doppelklick auf das Radar-Symbol in der Taskleiste):
-  Ton an/aus und testen, eigene .wav, Zoom, Groesse, Deckkraft, Norden, wann das Radar sichtbar ist,
+  Ton an/aus und testen, Lautstaerke (beim Verstellen ertoent der Ton), eigene .wav, Zoom, Groesse,
+  Deckkraft, Norden, wann das Radar sichtbar ist,
   Position zuruecksetzen, Web-Ansicht oeffnen (grosse Karte und Liste im Browser), Aufnahmen-Ordner oeffnen,
   Radar beenden. Aenderungen wirken sofort.
 

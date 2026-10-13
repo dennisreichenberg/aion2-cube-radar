@@ -420,3 +420,10 @@ Interaktionsreichweite (≈ 2 m, B7).
   - Ein Doppelklick startet das Overlay.
   - Fehler (Npcap fehlt, läuft bereits, Absturz) erscheinen als Hinweisfenster.
   - Eigenes Programm-Symbol; neuer Menüpunkt „Aufnahmen-Ordner öffnen“.
+  - Nachtrag: Die exe aus `dist\` im Projektordner fand die Web-Oberfläche nicht (Absturz beim Start); behoben.
+- **2026-10-13 (Radar 0.7.1):** Lautstärke-Regler für den Cube-Ton (5–100 %, Standard 80 %).
+  - Beim Verschieben wird der Ton in der neuen Lautstärke abgespielt, sobald der Regler kurz ruht.
+  - Der Piepton (1200 Hz + 1600 Hz wie bisher) wird jetzt selbst erzeugt und per `PlaySound` aus dem Speicher
+    abgespielt; `Console.Beep` kannte keine Lautstärke.
+  - Eine eigene .wav wird vor dem Abspielen leiser gerechnet (PCM 8/16/24/32 Bit und 32-Bit-Float). Komprimierte
+    .wav-Dateien laufen in Originallautstärke; ist die Datei kein WAV, kommt der Piepton.

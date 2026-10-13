@@ -24,7 +24,16 @@ if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed" }
 
 $exe = Join-Path $stage "Cube Radar.exe"
 Copy-Item (Join-Path $publish "cuberadar.exe") $exe
-Copy-Item $exe (Join-Path $dist "Cube Radar.exe") -Force
+# A running radar locks dist\Cube Radar.exe, but Windows lets it be renamed: it is moved aside (and removed on a
+# later run, once it has quit), so the next double-click starts the new version.
+$shared = Join-Path $dist "Cube Radar.exe"
+Get-ChildItem $dist -Filter "Cube Radar.*.old" | Remove-Item -Force -ErrorAction SilentlyContinue
+if (Test-Path $shared)
+{
+    try { Remove-Item $shared -Force -ErrorAction Stop }
+    catch { Rename-Item $shared ("Cube Radar.{0:yyyyMMdd_HHmmss}.old" -f (Get-Date)); "dist\Cube Radar.exe was running: old file moved aside" }
+}
+Copy-Item $exe $shared
 Copy-Item (Join-Path $root "LICENSE") $stage
 Copy-Item (Join-Path $root "docs\LIESMICH_TESTER.txt") (Join-Path $stage "LIESMICH.txt")
 Remove-Item $publish -Recurse -Force

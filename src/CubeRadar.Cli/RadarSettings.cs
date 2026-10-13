@@ -28,6 +28,8 @@ internal sealed class RadarSettings
     public bool SoundEnabled { get; set; } = true;
     /// <summary>Optional .wav played instead of the beep.</summary>
     public string? SoundFile { get; set; }
+    /// <summary>Volume of the sound, 5–100 %.</summary>
+    public int SoundVolumePct { get; set; } = 80;
 
     public static RadarSettings Load(string path)
     {

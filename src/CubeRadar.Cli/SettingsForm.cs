@@ -94,6 +94,23 @@ internal sealed class SettingsForm : Form
         test.Click += (_, _) => actions.TestSound();
         Full(Flow(sound, test));
 
+        var volume = new TrackBar { Minimum = 5, Maximum = 100, TickFrequency = 10, SmallChange = 5, LargeChange = 10, Width = 200,
+            Value = Math.Clamp(settings.SoundVolumePct, 5, 100), BackColor = Bg };
+        var volumeText = new Label { AutoSize = true, ForeColor = Muted, Text = $"{volume.Value} %", Margin = new Padding(6, 8, 0, 0) };
+        // Play the sound at the new volume once the slider rests (not on every step while dragging).
+        var preview = new System.Windows.Forms.Timer { Interval = 200 };
+        preview.Tick += (_, _) => { preview.Stop(); actions.TestSound(); };
+        Disposed += (_, _) => preview.Dispose();
+        volume.ValueChanged += (_, _) =>
+        {
+            settings.SoundVolumePct = volume.Value;
+            volumeText.Text = $"{volume.Value} %";
+            Save();
+            preview.Stop();
+            preview.Start();
+        };
+        Row("Lautstärke", Flow(volume, volumeText));
+
         var file = new TextBox { Width = 230, ReadOnly = true, BackColor = Field, ForeColor = Fg, BorderStyle = BorderStyle.FixedSingle, Text = settings.SoundFile ?? "" };
         var browse = Btn("Durchsuchen …");
         browse.Click += (_, _) =>

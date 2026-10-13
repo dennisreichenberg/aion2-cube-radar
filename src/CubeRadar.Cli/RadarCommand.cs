@@ -116,28 +116,9 @@ internal static class RadarCommand
 
         using var hub = new SnapshotHub(() => JsonSerializer.SerializeToUtf8Bytes(State(), Json));
 
-        System.Media.SoundPlayer? player = null;
         void PlayCubeSound()
         {
-            if (settings.SoundFile is { Length: > 0 } wav && File.Exists(wav))
-            {
-                try
-                {
-                    player ??= new System.Media.SoundPlayer();
-                    player.SoundLocation = wav;
-                    player.Play();
-                    return;
-                }
-                catch (Exception ex) when (ex is InvalidOperationException or IOException or TimeoutException)
-                {
-                    Log($"sound file not playable ({ex.Message}), using the beep");
-                }
-            }
-            Task.Run(() =>
-            {
-                Console.Beep(1200, 120);
-                Console.Beep(1600, 160);
-            });
+            if (CubeSound.Play(settings.SoundFile, settings.SoundVolumePct) is { } note) Log(note);
         }
 
         void SetNorth(string north)

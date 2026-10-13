@@ -55,7 +55,7 @@ Im Repository:
   „Web-Ansicht öffnen“ und „Beenden“.
 - **Einstellungen** öffnest du über den ⚙-Knopf oben rechts im Overlay oder über das Tray-Symbol. Änderungen wirken
   sofort und werden gespeichert:
-  - Ton an/aus mit „Testen“, optional eine eigene .wav-Datei
+  - Ton an/aus mit „Testen“, Lautstärke (beim Verstellen hörst du den Ton), optional eine eigene .wav-Datei
   - Zoom, Größe (75–150 %) und Deckkraft
   - Nordrichtung
   - „Nur wenn Aion 2 im Vordergrund“ und „In Menüs ausblenden“
