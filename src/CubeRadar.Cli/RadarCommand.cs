@@ -44,11 +44,18 @@ internal static class RadarCommand
 
         var cfg = RadarConfig.Load(Path.Combine(root, "config"), root);
         var spots = SpotIndex.TryLoad(cfg.SpotsCsv);
+        var settings = RadarSettings.Load(Path.Combine(root, "data", "settings.json"));
+        var overlayPng = Opt("--overlay-png");
         var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         using var store = new SqliteRadarStore(
             replay is null ? Path.Combine(root, "data", "radar.db") : Path.Combine(Path.GetTempPath(), $"cuberadar_replay_{stamp}.db"),
             (replay is null ? "live_" : "replay_") + stamp);
         var engine = new RadarEngine(cfg, store, spots);
+        if (settings.North is { } savedNorth)
+        {
+            try { engine.SetNorth(savedNorth); }
+            catch (FormatException) { settings.North = null; }
+        }
 
         string? dir = null;
         if (replay is null)
@@ -117,6 +124,23 @@ internal static class RadarCommand
         app.MapGet("/api/spots", (string? zone) =>
             Results.Json(spots is null || zone is null ? [] : spots.InZone(zone).Select(s => new[] { s.X, s.Y, s.Z }).ToList(), Json));
         app.MapGet("/api/history", (string? zone) => Results.Json(store.History(zone), Json));
+        app.MapPost("/api/north", async (HttpContext ctx) =>
+        {
+            var body = await JsonSerializer.DeserializeAsync<Dictionary<string, string>>(ctx.Request.Body);
+            try
+            {
+                engine.SetNorth(body?.GetValueOrDefault("north") ?? "");
+            }
+            catch (FormatException ex)
+            {
+                return Results.BadRequest(ex.Message);
+            }
+            settings.North = engine.North;
+            settings.Save();
+            Log($"north = {engine.North}");
+            hub.Kick();
+            return Results.Ok();
+        });
         app.MapGet("/api/export/sightings.csv", () => Results.Text(store.Export(json: false), "text/csv"));
         app.MapGet("/api/export/sightings.json", () => Results.Text(store.Export(json: true), "application/json"));
         app.Map("/ws", async (HttpContext ctx) =>
@@ -158,6 +182,17 @@ internal static class RadarCommand
         using var markers = new MarkerInput(session, bindings, beep, stop.Set);
         markers.PrintHelp();
 
+        OverlayWindow? overlay = null;
+        GlobalHotkeys? overlayKeys = null;
+        if (!a.Contains("--no-overlay"))
+        {
+            overlay = OverlayWindow.Start(engine.Snapshot, settings);
+            overlayKeys = new GlobalHotkeys(GlobalHotkeys.Parse("ctrl+shift+F10=overlay,ctrl+shift+F11=overlay_lock"),
+                b => { if (b.Label == "overlay") overlay.ToggleVisible(); else overlay.ToggleLock(); });
+            foreach (var (b, ok, err) in overlayKeys.Results)
+                Console.WriteLine($"  hotkey {b.Display,-16} → {(b.Label == "overlay" ? "overlay on/off" : "overlay move/lock"),-18} {(ok ? "ok" : $"NOT registered (error {err})")}");
+        }
+
         if (replay is null)
         {
             sniffer = new LiveSniffer(new LiveSnifferOptions { DeviceName = Opt("--device") });
@@ -186,6 +221,11 @@ internal static class RadarCommand
                 });
                 replayState = $"replay finished ({n:N0} packets)";
                 Log(replayState + " · press q + Enter to quit");
+                if (overlayPng is not null)
+                {
+                    OverlayRenderer.SavePng(overlayPng, engine.Snapshot());
+                    Log($"overlay frame: {overlayPng}");
+                }
                 hub.Kick();
             });
         }
@@ -199,6 +239,8 @@ internal static class RadarCommand
                 (s.Warnings.Count > 0 ? $" · WARN {string.Join(" | ", s.Warnings)}" : ""));
         }
 
+        overlayKeys?.Dispose();
+        overlay?.Shutdown();
         sniffer?.Stop();
         sniffer?.Dispose();
         app.StopAsync().GetAwaiter().GetResult();

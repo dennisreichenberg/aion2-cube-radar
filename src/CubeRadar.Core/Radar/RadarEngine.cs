@@ -52,7 +52,8 @@ public sealed class RadarEngine
     private readonly RadarConfig _cfg;
     private readonly IRadarStore? _store;
     private readonly SpotIndex? _spots;
-    private readonly Orientation _north;
+    private Orientation _north;
+    private string _northName;
 
     private readonly Dictionary<uint, CubeTemplate> _templates;
     private readonly Dictionary<uint, ObjectInfo> _objects = new();
@@ -91,6 +92,7 @@ public sealed class RadarEngine
         _store = store;
         _spots = spots;
         _north = Orientation.Parse(cfg.North);
+        _northName = cfg.North;
         _templates = new Dictionary<uint, CubeTemplate>(cfg.CubeTemplates);
         foreach (var t in store?.LoadLearnedTemplates() ?? []) _templates.TryAdd(t.Template, t);
         _radii = store?.LoadRadiusSamples() ?? new Dictionary<(uint, bool), List<double>>();
@@ -108,6 +110,22 @@ public sealed class RadarEngine
     public string? Zone { get; private set; }
     public long LastPacketMs { get; private set; }
     public long Frames { get; private set; }
+
+    /// <summary>Which world axis is north (−y, +y, +x, −x); shared by the web UI and the overlay.</summary>
+    public string North
+    {
+        get { lock (_gate) return _northName; }
+    }
+
+    public void SetNorth(string north)
+    {
+        var parsed = Orientation.Parse(north); // throws FormatException for anything else
+        lock (_gate)
+        {
+            _north = parsed;
+            _northName = north.Trim().ToLowerInvariant();
+        }
+    }
 
     public IReadOnlyCollection<CubeTemplate> Templates
     {
@@ -520,7 +538,7 @@ public sealed class RadarEngine
                 _trail.Select(p => float.IsNaN(p.X) ? Array.Empty<float>() : new[] { p.X, p.Y }).ToList(),
                 cubes,
                 SelfCheck(now),
-                new OrientationView(_north.NorthX, _north.NorthY, _north.EastX, _north.EastY, _cfg.North),
+                new OrientationView(_north.NorthX, _north.NorthY, _north.EastX, _north.EastY, _northName),
                 _cfg.FixFreshSeconds,
                 Frames);
         }

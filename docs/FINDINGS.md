@@ -152,6 +152,22 @@ deshalb „existiert seit“.
 Cube 52651 tauchte bei 97 m Entfernung auf. 6,5 s später begann Spieler 9019 ihn zu öffnen (`38 36` → `3a 36` mit
 Key-Item → `35 36` Grund `04`). Das Radar meldete korrekt „geöffnet (von Spieler 9019)“.
 
+### B12. Frisch gespawnte Cubes kommen sofort, auch im Stillstand, und sind hart umkämpft (2026-10-13)
+Quelle: Kopie von `captures/radar_20261013_125039` (30 min, 0 Resyncs/Lücken). Du standest weitgehend still.
+
+| Cube | `created` | erstes `34 36` | Abstand zu dir | geöffnet von | nach Spawn |
+|---|---|---|---|---|---|
+| 36443 (1200039) | 13:05:08 | 13:05:09 | 81 m | uns (9180) | 27 s |
+| 64044 (1200039) | 13:08:24 | 13:08:25 | 89 m | Spieler 5709 | 18 s |
+| 24285 (1200039) | 13:18:44 | 13:18:45 | 82 m | Spieler 3612 | 20 s |
+
+- Ein Cube, der innerhalb der Sichtweite spawnt, wird 1 s nach dem Spawn gesendet, auch wenn man sich nicht bewegt.
+  Das Radar (Replay derselben Daten) meldete alle drei sofort.
+- Spieler 3612 stand 1 s nach dem Spawn **94 m** vom Cube entfernt und hatte ihn 20 s später offen. Er ist also ohne
+  Zögern hingelaufen. Das deutet darauf hin, dass auch andere solche Werkzeuge nutzen. Belegen lässt sich das nicht.
+- Zur Frage, ob AFK-Stillstand die Erkennung verhindert: **nein**. Die beiden Cubes wurden nicht übersehen, sie
+  wurden in 18–20 s von anderen geöffnet.
+
 ## Phase 2: Eigene Position (BELEGT, 2026-10-13)
 
 Ausgewertet wurden alle drei Mitschnitte (`112703` Kampf 25 s, `114103` 111 s, `114345` Verteron 317 s), eigene
@@ -372,3 +388,8 @@ Interaktionsreichweite (≈ 2 m, B7).
   - Neu: B9 (Template 1200041), B10 (`created` = Spawn), B11, P7 (eigene Position aus `21 36`/`23 36`, Map 1010).
   - Radar: Höhenanzeige (▲/■/▼, Höhenleiste, „über/unter dir“), Spur-Unterbrechung bei Teleports, Ruhezeit für
     Radius-Stichproben. Der erste Map-Load leert nur Cubes einer anderen Zone.
+- **2026-10-13 (Radar 0.4.0):** Overlay über dem Spiel. Es ist ein kleines, klick-durchlässiges Fenster, immer im
+  Vordergrund, und nimmt nie den Fokus (Strg+Umschalt+F10 ein/aus, F11 verschieben).
+  - Die Nordrichtung liegt jetzt serverseitig (`POST /api/north`, `data/settings.json`) und gilt für Web-UI und
+    Overlay gleichermaßen.
+  - B12 ergänzt: Verpasste Cubes waren nicht unerkannt, andere Spieler öffneten sie nach 18–20 s.

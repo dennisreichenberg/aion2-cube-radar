@@ -18,7 +18,6 @@ for (const k of ["visible", "out", "opening", "gone", "me", "spot", "hist", "tex
 const ui = {
   mode: localStorage.getItem("mode") || "radar",
   range: Number(localStorage.getItem("range") || 200),
-  north: localStorage.getItem("north") || "",
   sound: false,
   notify: localStorage.getItem("notify") === "1" && "Notification" in window && Notification.permission === "granted",
 };
@@ -56,6 +55,8 @@ function onState() {
   firstUpdate = false;
   if (fresh.length) announce(fresh);
   if (r.zone && r.zone !== spotsZone) loadZone(r.zone);
+  const sel = document.getElementById("north");
+  if (document.activeElement !== sel) sel.value = r.orientation.north;
   renderHeader();
   renderList(fresh);
   draw();
@@ -72,15 +73,10 @@ setInterval(() => spotsZone && loadZone(spotsZone), 60000);
 
 // ------------------------------------------------------------------ geometry
 
+/** North comes from the server (shared with the overlay), changed through the "Norden" select. */
 function orientation() {
   const o = msg.radar.orientation;
-  const axis = ui.north || o.north;
-  return {
-    "-y": { nx: 0, ny: -1, ex: 1, ey: 0 },
-    "+y": { nx: 0, ny: 1, ex: -1, ey: 0 },
-    "+x": { nx: 1, ny: 0, ex: 0, ey: 1 },
-    "-x": { nx: -1, ny: 0, ex: 0, ey: -1 },
-  }[axis] || { nx: o.northX, ny: o.northY, ex: o.eastX, ey: o.eastY };
+  return { nx: o.northX, ny: o.northY, ex: o.eastX, ey: o.eastY };
 }
 
 /** Own position: the latest of real fix and ring estimate. */
@@ -452,7 +448,6 @@ function syncControls() {
   document.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("on", b.dataset.mode === ui.mode));
   document.getElementById("range").value = String(ui.range);
   document.getElementById("range").disabled = ui.mode !== "radar";
-  document.getElementById("north").value = ui.north;
   const s = document.getElementById("sound");
   s.textContent = ui.sound ? "Ton an" : "Ton aus";
   s.classList.toggle("on", ui.sound);
@@ -472,11 +467,11 @@ document.getElementById("range").addEventListener("change", (e) => {
   localStorage.setItem("range", ui.range);
   draw();
 });
-document.getElementById("north").addEventListener("change", (e) => {
-  ui.north = e.target.value;
-  localStorage.setItem("north", ui.north);
-  if (msg) onState();
+document.getElementById("north").addEventListener("change", async (e) => {
+  await fetch("/api/north", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ north: e.target.value }) });
+  e.target.blur();
 });
+localStorage.removeItem("north"); // older versions kept it per browser
 document.getElementById("sound").addEventListener("click", () => {
   ui.sound = !ui.sound;
   if (ui.sound && !audio) audio = new AudioContext();
