@@ -49,15 +49,20 @@ Die ausführbare Datei liegt dann unter `src\CubeRadar.Cli\bin\Release\net10.0-w
   zeigt, wie alt sie ist. Ohne frische Position zeigt das Radar eine Schätzung mit Unsicherheitskreis.
 - **Nordrichtung:** Die Konfiguration nimmt Welt −Y an (unbestätigt). Stimmt die Richtung nicht mit der Minimap
   überein, stellst du sie oben bei „Norden“ um. Die Auswahl wird gespeichert.
-- **Aufzeichnung:** Jede Sitzung schreibt `capturesadar_<datum_zeit>aw.pcapng` und `markers.jsonl`. Die Hotkeys
+- **Aufzeichnung:** Jede Sitzung schreibt `captures
+adar_<datum_zeit>
+aw.pcapng` und `markers.jsonl`. Die Hotkeys
   aus dem nächsten Abschnitt funktionieren auch hier.
-- **Datenbank:** Jede Sichtung landet in `dataadar.db`. Export über die Links „CSV“ und „JSON“ in der Liste.
+- **Datenbank:** Jede Sichtung landet in `data
+adar.db`. Export über die Links „CSV“ und „JSON“ in der Liste.
 - **Selbstcheck:** Bleiben erwartete Pakete aus (etwa nach einem Patch), erscheint ein roter Hinweis. Die Opcodes
-  stehen in `configadar.json`.
+  stehen in `config
+adar.json`.
 - **Andere Zonen:** Wird ein Objekt mit dem Cube-Key geöffnet oder steht es exakt auf einem bekannten Spot, lernt das
   Radar dessen Template als Cube-Template.
 
-Replay zum Testen: `.\cuberadar.cmd radar --replay captures\<sitzung>aw.pcapng --speed 5`. Mit `--stop-at 200`
+Replay zum Testen: `.\cuberadar.cmd radar --replay captures\<sitzung>
+aw.pcapng --speed 5`. Mit `--stop-at 200`
 hält der Replay bei Sekunde 200 des Mitschnitts an.
 
 ## Aufnehmen
