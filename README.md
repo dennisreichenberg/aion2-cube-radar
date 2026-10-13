@@ -41,8 +41,15 @@ Die ausführbare Datei liegt dann unter `src\CubeRadar.Cli\bin\Release\net10.0-w
 
 **Nur-Overlay-Modus** (`overlay.cmd` bzw. `radar --overlay-only`):
 - Es läuft unsichtbar im Hintergrund; sichtbar ist nur das Mini-Radar über dem Spiel.
-- Das Tray-Symbol unten rechts bietet per Rechtsklick: Overlay ein/aus, Zoom, „Web-Ansicht öffnen“ (auch per
-  Doppelklick) und „Beenden“.
+- Das Tray-Symbol unten rechts bietet per Rechtsklick: Einstellungen (auch per Doppelklick), Overlay ein/aus, Zoom,
+  „Web-Ansicht öffnen“ und „Beenden“.
+- **Einstellungen** öffnest du über den ⚙-Knopf oben rechts im Overlay oder über das Tray-Symbol. Änderungen wirken
+  sofort und werden gespeichert:
+  - Ton an/aus mit „Testen“, optional eine eigene .wav-Datei
+  - Zoom, Größe (75–150 %) und Deckkraft
+  - Nordrichtung
+  - „Nur wenn Aion 2 im Vordergrund“ und „In Menüs ausblenden“
+  - Knöpfe: Position zurücksetzen, Web-Ansicht öffnen, Radar beenden
 - Die Ausgaben landen in `captures\radar_<datum_zeit>\radar.log`. Aufzeichnung, Datenbank, Piepton und Marker-Hotkeys
   laufen wie gewohnt.
 

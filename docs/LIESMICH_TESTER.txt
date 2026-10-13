@@ -34,6 +34,11 @@ Anzeige
   Rechts im Radar zeigt eine Hoehenleiste alle Cubes relativ zu deiner Hoehe. Deine Position kommt nur bei
   Ereignissen (Buffs, Kampf, Teleport); ihr Alter steht oben in der Kopfzeile.
 
+Einstellungen
+  Zahnrad-Knopf oben rechts im Mini-Radar (oder Rechtsklick auf das Radar-Symbol in der Taskleiste):
+  Ton an/aus und testen, eigene .wav, Zoom, Groesse, Deckkraft, Norden, wann das Overlay sichtbar ist,
+  Position zuruecksetzen, Web-Ansicht oeffnen, Radar beenden. Aenderungen wirken sofort.
+
 Mini-Radar (kleines Fenster ueber dem Spiel)
   Norden oben, du in der Mitte, Ringe mit Meterangabe, gestrichelt die Sichtweite (~100 m), duenn deine
   letzte Laufspur (zeigt, woher du kommst). Cubes als Dreieck hoch/runter (ueber/unter dir) oder Quadrat

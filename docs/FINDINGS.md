@@ -408,3 +408,8 @@ Interaktionsreichweite (≈ 2 m, B7).
   starten.cmd“).
   - Kein Browser, die Konsole ist versteckt, die Ausgaben gehen nach `radar.log`.
   - Tray-Symbol mit Overlay ein/aus, Zoom, Web-Ansicht und Beenden. Das Tray-Symbol gibt es auch im normalen Modus.
+- **2026-10-13 (Radar 0.6.0):** Einstellungsfenster, erreichbar über den ⚙-Knopf im Overlay und das Tray-Symbol.
+  - Ton (an/aus, Test, eigene .wav), Zoom, Größe, Deckkraft, Norden, Sichtbarkeitsregeln, Position zurücksetzen,
+    Web-Ansicht, Beenden.
+  - Änderungen werden sofort angewendet und gespeichert.
+  - Solange das eigene Einstellungsfenster vorne ist, bleibt das Overlay sichtbar.

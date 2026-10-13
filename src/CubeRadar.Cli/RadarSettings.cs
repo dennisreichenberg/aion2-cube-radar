@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace CubeRadar.Cli;
 
-/// <summary>Per-user radar settings in <c>data/settings.json</c>: north axis and overlay placement.</summary>
+/// <summary>Per-user radar settings in <c>data/settings.json</c>: north axis, sound and overlay.</summary>
 internal sealed class RadarSettings
 {
     private static readonly JsonSerializerOptions Json = new()
@@ -20,6 +20,14 @@ internal sealed class RadarSettings
     public int OverlayRangeM { get; set; } = 120;
     /// <summary>Hide the overlay while the mouse cursor is visible (in-game menus / UI mode).</summary>
     public bool OverlayHideInMenus { get; set; } = true;
+    /// <summary>Show the overlay only while AION 2 is the foreground window.</summary>
+    public bool OverlayOnlyWhenGameFocused { get; set; } = true;
+    public int OverlayScalePct { get; set; } = 100;
+    public int OverlayOpacityPct { get; set; } = 90;
+    /// <summary>Sound when a new cube appears.</summary>
+    public bool SoundEnabled { get; set; } = true;
+    /// <summary>Optional .wav played instead of the beep.</summary>
+    public string? SoundFile { get; set; }
 
     public static RadarSettings Load(string path)
     {

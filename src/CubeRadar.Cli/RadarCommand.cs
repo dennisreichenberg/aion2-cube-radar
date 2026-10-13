@@ -98,16 +98,45 @@ internal static class RadarCommand
         object State() => new { radar = engine.Snapshot(), capture = CaptureView(), wallMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() };
 
         using var hub = new SnapshotHub(() => JsonSerializer.SerializeToUtf8Bytes(State(), Json));
+
+        System.Media.SoundPlayer? player = null;
+        void PlayCubeSound()
+        {
+            if (settings.SoundFile is { Length: > 0 } wav && File.Exists(wav))
+            {
+                try
+                {
+                    player ??= new System.Media.SoundPlayer();
+                    player.SoundLocation = wav;
+                    player.Play();
+                    return;
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or IOException or TimeoutException)
+                {
+                    Log($"sound file not playable ({ex.Message}), using the beep");
+                }
+            }
+            Task.Run(() =>
+            {
+                Console.Beep(1200, 120);
+                Console.Beep(1600, 160);
+            });
+        }
+
+        void SetNorth(string north)
+        {
+            engine.SetNorth(north); // throws FormatException for anything but -y, +y, +x, -x
+            settings.North = engine.North;
+            settings.Save();
+            Log($"north = {engine.North}");
+            hub.Kick();
+        }
         engine.CubeAppeared += c =>
         {
             Log($"CUBE {c.ObjectId} template {c.Template} {c.Zone} at ({c.X:0}, {c.Y:0}, {c.Z:0})" +
                 (c.FirstDistance is { } d ? $" · {d / Units.PerMetre:0} m away" : "") +
                 (c.CreatedMs > 0 ? $" · exists for {Math.Max(0, (c.FirstSeenMs - c.CreatedMs) / 1000)} s" : ""));
-            if (beep) Task.Run(() =>
-            {
-                Console.Beep(1200, 120);
-                Console.Beep(1600, 160);
-            });
+            if (beep && settings.SoundEnabled) PlayCubeSound();
             hub.Kick();
         };
         engine.CubeChanged += c =>
@@ -135,16 +164,12 @@ internal static class RadarCommand
             var body = await JsonSerializer.DeserializeAsync<Dictionary<string, string>>(ctx.Request.Body);
             try
             {
-                engine.SetNorth(body?.GetValueOrDefault("north") ?? "");
+                SetNorth(body?.GetValueOrDefault("north") ?? "");
             }
             catch (FormatException ex)
             {
                 return Results.BadRequest(ex.Message);
             }
-            settings.North = engine.North;
-            settings.Save();
-            Log($"north = {engine.North}");
-            hub.Kick();
             return Results.Ok();
         });
         app.MapGet("/api/export/sightings.csv", () => Results.Text(store.Export(json: false), "text/csv"));
@@ -193,8 +218,10 @@ internal static class RadarCommand
         GlobalHotkeys? overlayKeys = null;
         if (!a.Contains("--no-overlay"))
         {
-            overlay = OverlayWindow.Start(engine.Snapshot, settings);
-            overlay.ShowTray(() => TryOpen(url), stop.Set);
+            var actions = new OverlayActions(() => TryOpen(url), stop.Set, PlayCubeSound, () => engine.North, SetNorth);
+            overlay = OverlayWindow.Start(engine.Snapshot, settings, actions);
+            overlay.ShowTray();
+            if (Opt("--settings-png") is { } settingsPng) SettingsForm.SavePng(settingsPng, settings, actions);
             overlayKeys = new GlobalHotkeys(GlobalHotkeys.Parse("ctrl+shift+F10=overlay on/off,ctrl+shift+F12=overlay range"),
                 b =>
                 {

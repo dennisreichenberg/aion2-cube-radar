@@ -25,7 +25,9 @@ internal sealed class OverlayWindow : Form
 
     private readonly Func<RadarSnapshot> _snapshot;
     private readonly RadarSettings _settings;
+    private readonly OverlayActions _actions;
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 150 };
+    private SettingsForm? _settingsForm;
     private RadarSnapshot? _last;
     private int _ticks;
     private bool _moving;
@@ -34,37 +36,34 @@ internal sealed class OverlayWindow : Form
     private long _cursorShownSince = -1;
     private NotifyIcon? _tray;
 
-    public OverlayWindow(Func<RadarSnapshot> snapshot, RadarSettings settings)
+    public OverlayWindow(Func<RadarSnapshot> snapshot, RadarSettings settings, OverlayActions actions)
     {
         _snapshot = snapshot;
         _settings = settings;
+        _actions = actions;
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
         TopMost = true;
         StartPosition = FormStartPosition.Manual;
         BackColor = Palette.Background;
-        Opacity = 0.9;
         DoubleBuffered = true;
         Text = "Cube Radar Overlay";
-        var scale = DeviceDpi / 96f;
-        Size = OverlayRenderer.Measure(scale);
-        var screen = Screen.PrimaryScreen!.WorkingArea;
-        var x = settings.OverlayX ?? screen.Right - Width - (int)(24 * scale);
-        var y = settings.OverlayY ?? screen.Top + (int)(300 * scale);
-        Location = OnSomeScreen(new Point(x, y)) ? new Point(x, y) : new Point(screen.Right - Width - 24, screen.Top + 300);
+        ApplySettings();
+        var p = new Point(settings.OverlayX ?? 0, settings.OverlayY ?? 0);
+        Location = settings.OverlayX is not null && OnSomeScreen(p) ? p : DefaultLocation();
         _timer.Tick += (_, _) => Tick();
         _timer.Start();
     }
 
     /// <summary>Runs the overlay on its own UI thread; returns once the window exists.</summary>
-    public static OverlayWindow Start(Func<RadarSnapshot> snapshot, RadarSettings settings)
+    public static OverlayWindow Start(Func<RadarSnapshot> snapshot, RadarSettings settings, OverlayActions actions)
     {
         OverlayWindow? window = null;
         using var ready = new ManualResetEventSlim();
         var thread = new Thread(() =>
         {
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
-            window = new OverlayWindow(snapshot, settings);
+            window = new OverlayWindow(snapshot, settings, actions);
             _ = window.Handle; // the handle must exist for calls from other threads, also while hidden
             ready.Set();
             Application.Run(new ApplicationContext());
@@ -92,7 +91,13 @@ internal sealed class OverlayWindow : Form
         switch (m.Msg)
         {
             case WmNcHitTest:
-                m.Result = HtCaption; // the whole overlay is a drag handle; Windows moves it
+                var screen = new Point(unchecked((short)(long)m.LParam), unchecked((short)((long)m.LParam >> 16)));
+                if (OverlayRenderer.GearRect(RenderScale).Contains(PointToClient(screen)))
+                {
+                    m.Result = 1; // HTCLIENT: the gear button gets the click
+                    return;
+                }
+                m.Result = HtCaption; // everything else is a drag handle; Windows moves it
                 _moving = (MouseButtons & MouseButtons.Left) != 0;
                 return;
             case WmMouseActivate:
@@ -106,6 +111,47 @@ internal sealed class OverlayWindow : Form
                 break;
         }
         base.WndProc(ref m);
+    }
+
+    protected override void OnMouseClick(MouseEventArgs e)
+    {
+        if (e.Button == MouseButtons.Left && OverlayRenderer.GearRect(RenderScale).Contains(e.Location)) OpenSettings();
+        base.OnMouseClick(e);
+    }
+
+    /// <summary>Overlay scale: screen DPI times the user's size setting.</summary>
+    private float RenderScale => DeviceDpi / 96f * Math.Clamp(_settings.OverlayScalePct, 50, 200) / 100f;
+
+    /// <summary>Re-reads size and opacity (called after every change in the settings window).</summary>
+    public void ApplySettings()
+    {
+        Size = OverlayRenderer.Measure(RenderScale);
+        Opacity = Math.Clamp(_settings.OverlayOpacityPct, 40, 100) / 100.0;
+        Invalidate();
+    }
+
+    public void OpenSettings() => Ui(() =>
+    {
+        if (_settingsForm is { IsDisposed: false })
+        {
+            _settingsForm.Activate();
+            return;
+        }
+        _settingsForm = new SettingsForm(_settings, _actions, ApplySettings, ResetPosition);
+        _settingsForm.Show();
+    });
+
+    private void ResetPosition()
+    {
+        Location = DefaultLocation();
+        _settings.OverlayX = _settings.OverlayY = null;
+        _settings.Save();
+    }
+
+    private Point DefaultLocation()
+    {
+        var screen = Screen.PrimaryScreen!.WorkingArea;
+        return new Point(screen.Right - Width - (int)(24 * RenderScale), screen.Top + (int)(300 * RenderScale));
     }
 
     protected override void OnMouseWheel(MouseEventArgs e)
@@ -145,14 +191,15 @@ internal sealed class OverlayWindow : Form
     });
 
     /// <summary>Tray icon with a menu: overlay on/off, range, web view, quit.</summary>
-    public void ShowTray(Action openWeb, Action quit) => Ui(() =>
+    public void ShowTray() => Ui(() =>
     {
         var menu = new ContextMenuStrip();
+        menu.Items.Add("Einstellungen …", null, (_, _) => OpenSettings());
         menu.Items.Add("Overlay ein/aus (Strg+Umschalt+F10)", null, (_, _) => ToggleVisible());
         menu.Items.Add("Zoom wechseln (Strg+Umschalt+F12)", null, (_, _) => CycleRange());
-        menu.Items.Add("Web-Ansicht öffnen", null, (_, _) => openWeb());
+        menu.Items.Add("Web-Ansicht öffnen", null, (_, _) => _actions.OpenWeb());
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Beenden", null, (_, _) => quit());
+        menu.Items.Add("Beenden", null, (_, _) => _actions.Quit());
         _tray = new NotifyIcon
         {
             Icon = TrayGlyph(),
@@ -160,7 +207,7 @@ internal sealed class OverlayWindow : Form
             ContextMenuStrip = menu,
             Visible = true,
         };
-        _tray.DoubleClick += (_, _) => openWeb();
+        _tray.DoubleClick += (_, _) => OpenSettings();
     });
 
     /// <summary>A small radar glyph: rings and a green cube.</summary>
@@ -222,7 +269,8 @@ internal sealed class OverlayWindow : Form
         if (_gamePids.Length == 0) return true; // no game running (replay / testing): just show it
 
         GetWindowThreadProcessId(GetForegroundWindow(), out var pid);
-        if (!_gamePids.Contains((int)pid)) return false;
+        if (pid == Environment.ProcessId) return true; // our settings window is in front: keep the overlay visible
+        if (!_gamePids.Contains((int)pid)) return !_settings.OverlayOnlyWhenGameFocused;
 
         if (!_settings.OverlayHideInMenus) return true;
         var info = new CursorInfo { Size = Marshal.SizeOf<CursorInfo>() };
@@ -238,7 +286,7 @@ internal sealed class OverlayWindow : Form
     }
 
     protected override void OnPaint(PaintEventArgs e) =>
-        OverlayRenderer.Render(e.Graphics, ClientSize, _last, DeviceDpi / 96f, _settings.OverlayRangeM);
+        OverlayRenderer.Render(e.Graphics, ClientSize, _last, RenderScale, _settings.OverlayRangeM);
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
@@ -291,6 +339,10 @@ internal static class OverlayRenderer
 
     public static Size Measure(float scale) => new((int)(Side * scale), (int)((Side + Header) * scale));
 
+    /// <summary>The settings button in the header, in client pixels.</summary>
+    public static Rectangle GearRect(float scale) =>
+        Rectangle.Round(new RectangleF((Side - 24) * scale, 1 * scale, 22 * scale, Header * scale - 2 * scale));
+
     public static void Render(Graphics g, Size size, RadarSnapshot? s, float scale, int rangeM)
     {
         g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -307,7 +359,9 @@ internal static class OverlayRenderer
 
         // header: name, own position age, range
         Text(g, "CUBE RADAR", small, Palette.Muted, 7, 4);
-        Text(g, $"{rangeM} m", small, Palette.Muted, Side - 7, 4, right: true);
+        Text(g, $"{rangeM} m", small, Palette.Muted, Side - 27, 4, right: true);
+        using (var gear = new Font("Segoe UI Symbol", 10.5f, FontStyle.Regular, GraphicsUnit.Point))
+            Text(g, "⚙", gear, Palette.Text, Side - 13, 1, center: true);
         var me = Me(s);
         if (s is not null)
         {
