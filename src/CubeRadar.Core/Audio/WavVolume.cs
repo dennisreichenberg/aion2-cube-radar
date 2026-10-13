@@ -54,35 +54,38 @@ public static class WavVolume
         return wav;
     }
 
+    /// <summary>Where a .wav keeps its format (the WAVEFORMATEX in the "fmt " chunk) and its samples.</summary>
+    public readonly record struct Layout(int FormatOffset, int FormatLength, int DataOffset, int DataLength);
+
+    /// <summary>The <see cref="Layout"/> of a .wav, or null if it is not a WAV file.</summary>
+    public static Layout? Find(ReadOnlySpan<byte> wav)
+    {
+        if (wav.Length < 12 || !wav[..4].SequenceEqual("RIFF"u8) || !wav[8..12].SequenceEqual("WAVE"u8)) return null;
+        int fmtAt = -1, fmtSize = 0;
+        for (var at = 12; at + 8 <= wav.Length;)
+        {
+            var id = wav.Slice(at, 4);
+            var size = (int)Math.Min(BinaryPrimitives.ReadUInt32LittleEndian(wav[(at + 4)..]), (uint)(wav.Length - at - 8));
+            if (id.SequenceEqual("fmt "u8) && size >= 16) (fmtAt, fmtSize) = (at + 8, size);
+            else if (id.SequenceEqual("data"u8)) return fmtAt < 0 ? null : new Layout(fmtAt, fmtSize, at + 8, size);
+            at += 8 + size + (size & 1);
+        }
+        return null;
+    }
+
     public enum ScaleResult { Scaled, NotWav, UnsupportedFormat }
 
     /// <summary>Scales the samples of a .wav in place. PCM 8/16/24/32 bit and 32-bit float (also as
     /// WAVE_FORMAT_EXTENSIBLE); anything else (ADPCM, MP3 in WAV, …) is left as it is.</summary>
     public static ScaleResult Scale(byte[] wav, int volumePct)
     {
-        var s = wav.AsSpan();
-        if (s.Length < 12 || !s[..4].SequenceEqual("RIFF"u8) || !s[8..12].SequenceEqual("WAVE"u8)) return ScaleResult.NotWav;
-
-        int tag = -1, bits = 0;
-        for (var at = 12; at + 8 <= s.Length;)
-        {
-            var id = s.Slice(at, 4);
-            var size = (int)Math.Min(BinaryPrimitives.ReadUInt32LittleEndian(s[(at + 4)..]), (uint)(s.Length - at - 8));
-            var body = s.Slice(at + 8, size);
-            if (id.SequenceEqual("fmt "u8) && size >= 16)
-            {
-                tag = BinaryPrimitives.ReadUInt16LittleEndian(body);
-                bits = BinaryPrimitives.ReadUInt16LittleEndian(body[14..]);
-                if (tag == 0xFFFE && size >= 26) tag = BinaryPrimitives.ReadUInt16LittleEndian(body[24..]); // sub-format GUID starts with the tag
-            }
-            else if (id.SequenceEqual("data"u8))
-            {
-                if (tag < 0) return ScaleResult.NotWav;
-                return ScaleSamples(body, tag, bits, Gain(volumePct)) ? ScaleResult.Scaled : ScaleResult.UnsupportedFormat;
-            }
-            at += 8 + size + (size & 1);
-        }
-        return ScaleResult.NotWav;
+        if (Find(wav) is not { } w) return ScaleResult.NotWav;
+        var fmt = wav.AsSpan(w.FormatOffset, w.FormatLength);
+        int tag = BinaryPrimitives.ReadUInt16LittleEndian(fmt), bits = BinaryPrimitives.ReadUInt16LittleEndian(fmt[14..]);
+        if (tag == 0xFFFE && fmt.Length >= 26) tag = BinaryPrimitives.ReadUInt16LittleEndian(fmt[24..]); // sub-format GUID starts with the tag
+        return ScaleSamples(wav.AsSpan(w.DataOffset, w.DataLength), tag, bits, Gain(volumePct))
+            ? ScaleResult.Scaled
+            : ScaleResult.UnsupportedFormat;
     }
 
     private static bool ScaleSamples(Span<byte> data, int tag, int bits, double gain)

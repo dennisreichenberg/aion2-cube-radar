@@ -120,6 +120,7 @@ internal static class RadarCommand
         {
             if (CubeSound.Play(settings.SoundFile, settings.SoundVolumePct) is { } note) Log(note);
         }
+        if (beep) CubeSound.Prepare(); // listed in the Windows volume mixer before the first cube
 
         void SetNorth(string north)
         {
@@ -282,6 +283,7 @@ internal static class RadarCommand
 
         overlayKeys?.Dispose();
         overlay?.Shutdown();
+        CubeSound.Close();
         sniffer?.Stop();
         sniffer?.Dispose();
         app.StopAsync().GetAwaiter().GetResult();

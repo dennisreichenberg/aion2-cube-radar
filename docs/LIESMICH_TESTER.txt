@@ -29,7 +29,8 @@ Mini-Radar
   Norden oben, du in der Mitte, Ringe mit Meterangabe, gestrichelt die Sichtweite (~100 m), duenn deine
   letzte Laufspur (zeigt, woher du kommst). Cubes als Dreieck hoch/runter (ueber/unter dir) oder Quadrat
   (gleiche Hoehe) mit z. B. "86 m ▲38". Cubes ausserhalb des Zooms: Doppelpfeil » am Rand.
-  Neuer Cube = Piepton.
+  Neuer Cube = Piepton. Im Windows-Lautstaerkemixer steht "Cube Radar" als eigene App (unabhaengig von
+  "Systemsounds"), dort laesst er sich zusaetzlich regeln oder stummschalten.
   Verschieben: einfach mit der Maus ziehen. Zoom: Mausrad ueber dem Radar.
   Es blendet sich aus, wenn Aion 2 nicht im Vordergrund ist oder der Mauszeiger sichtbar ist (Menues).
   Faehrst du mit dem Zeiger an seine Stelle, erscheint es zum Greifen.

@@ -427,3 +427,11 @@ Interaktionsreichweite (≈ 2 m, B7).
     abgespielt; `Console.Beep` kannte keine Lautstärke.
   - Eine eigene .wav wird vor dem Abspielen leiser gerechnet (PCM 8/16/24/32 Bit und 32-Bit-Float). Komprimierte
     .wav-Dateien laufen in Originallautstärke; ist die Datei kein WAV, kommt der Piepton.
+- **2026-10-13 (Radar 0.7.2):** Das Radar steht ab dem Start als eigene App „Cube Radar“ im Windows-Lautstärkemixer.
+  - Anlass: Ein Tester hat die Systemsounds stumm und will das Radar getrennt regeln. Das laufende 0.7.1-Radar
+    fehlte im Mixer und hatte bei der Messung keine Audio-Sitzung. Bei `PlaySound` entsteht sie erst mit dem ersten
+    Ton; danach blieb sie im Test mindestens 400 s erhalten.
+  - Gemessen mit der Core-Audio-Sitzungsliste: Schon 0.7.1 spielte in einer eigenen Sitzung, nicht unter
+    Systemsounds.
+  - Jetzt hält ein waveOut-Gerät die Sitzung ab dem Start offen. Sie ist nur während eines Tons aktiv, sonst inaktiv
+    (gemessen), hält also nichts wach.
