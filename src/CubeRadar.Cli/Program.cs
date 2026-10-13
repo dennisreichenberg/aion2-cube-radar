@@ -31,7 +31,7 @@ try
 }
 catch (Exception ex) when (!NativeConsole.HasConsole && ex is not FormatException)
 {
-    NativeConsole.Notify($"Cube Radar wurde wegen eines Fehlers beendet:\n\n{ex.Message}");
+    NativeConsole.Notify($"Cube Radar wurde wegen eines Fehlers beendet:\n\n{ex.GetType().Name}: {ex.Message}\n\nDaten und Log: {AppPaths.DataRoot}");
     return 1;
 }
 catch (FormatException ex)

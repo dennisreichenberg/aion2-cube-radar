@@ -16,7 +16,9 @@ internal static class AppPaths
     public static string DataRoot { get; private set; } = "";
     public static bool SingleExe { get; private set; }
 
-    public static string WebRoot => Path.Combine(AssetRoot, "wwwroot");
+    /// <summary>The web UI: next to the exe (build output), in the asset root (single exe), in the source tree
+    /// (exe started from inside the repository), or else unpacked from the exe.</summary>
+    public static string WebRoot { get; private set; } = "";
     public static string Captures => Path.Combine(DataRoot, "captures");
     public static string DataDir => Path.Combine(DataRoot, "data");
 
@@ -29,28 +31,42 @@ internal static class AppPaths
 
     public static void Init()
     {
+        var unpacked = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CubeRadar", "app",
+            typeof(AppPaths).Assembly.GetName().Version?.ToString(3) ?? "0");
         foreach (var start in new[] { AppContext.BaseDirectory, Environment.CurrentDirectory })
-            for (var d = new DirectoryInfo(start); d is not null; d = d.Parent)
+            for (var d = new DirectoryInfo(start); d is not null && AssetRoot.Length == 0; d = d.Parent)
                 if (File.Exists(Path.Combine(d.FullName, "config", "opcodes.json")))
-                {
                     AssetRoot = DataRoot = d.FullName;
-                    return;
-                }
 
-        SingleExe = true;
-        DataRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CubeRadar");
-        AssetRoot = Path.Combine(DataRoot, "app", typeof(AppPaths).Assembly.GetName().Version?.ToString(3) ?? "0");
-        Unpack();
+        if (AssetRoot.Length == 0)
+        {
+            SingleExe = true;
+            DataRoot = Path.GetDirectoryName(Path.GetDirectoryName(unpacked))!;
+            AssetRoot = unpacked;
+            Unpack(unpacked, "config/");
+        }
+
+        WebRoot = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "wwwroot"),
+            Path.Combine(AssetRoot, "wwwroot"),
+            Path.Combine(AssetRoot, "src", "CubeRadar.Cli", "wwwroot"),
+        }.FirstOrDefault(d => File.Exists(Path.Combine(d, "index.html"))) ?? "";
+        if (WebRoot.Length == 0)
+        {
+            Unpack(unpacked, "wwwroot/");
+            WebRoot = Path.Combine(unpacked, "wwwroot");
+        }
     }
 
-    /// <summary>Writes the embedded web UI and default config next to each other (only files that changed).</summary>
-    private static void Unpack()
+    /// <summary>Writes embedded files with the given prefix below <paramref name="root"/> (only files that changed).</summary>
+    private static void Unpack(string root, string prefix)
     {
         var assembly = typeof(AppPaths).Assembly;
         foreach (var name in assembly.GetManifestResourceNames())
         {
-            if (!name.StartsWith("wwwroot/", StringComparison.Ordinal) && !name.StartsWith("config/", StringComparison.Ordinal)) continue;
-            var target = Path.Combine(AssetRoot, name.Replace('/', Path.DirectorySeparatorChar));
+            if (!name.StartsWith(prefix, StringComparison.Ordinal)) continue;
+            var target = Path.Combine(root, name.Replace('/', Path.DirectorySeparatorChar));
             using var source = assembly.GetManifestResourceStream(name)!;
             if (File.Exists(target) && new FileInfo(target).Length == source.Length) continue;
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
