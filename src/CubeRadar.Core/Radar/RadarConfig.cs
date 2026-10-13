@@ -64,12 +64,12 @@ public sealed class RadarConfig
         [0x0E38] = RecordKind.PosTarget,
     };
 
-    /// <summary>Loads radar.json and cubes.json from <paramref name="configDir"/>; relative paths resolve against
+    /// <summary>Loads radar.json and cubes.json; relative paths in them (spots_csv) resolve against
     /// <paramref name="projectRoot"/>.</summary>
-    public static RadarConfig Load(string configDir, string projectRoot)
+    public static RadarConfig Load(string radarJson, string cubesJson, string projectRoot)
     {
         var options = new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
-        using var radar = JsonDocument.Parse(File.ReadAllText(Path.Combine(configDir, "radar.json")), options);
+        using var radar = JsonDocument.Parse(File.ReadAllText(radarJson), options);
         var r = radar.RootElement;
 
         var opcodes = new Dictionary<ushort, RecordKind>();
@@ -90,7 +90,7 @@ public sealed class RadarConfig
 
         var cubes = new Dictionary<uint, CubeTemplate>();
         uint openItem = 0x259AC523;
-        var cubesPath = Path.Combine(configDir, "cubes.json");
+        var cubesPath = cubesJson;
         if (File.Exists(cubesPath))
         {
             using var c = JsonDocument.Parse(File.ReadAllText(cubesPath), options);

@@ -23,7 +23,7 @@ internal static class RadarCommand
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-    public static int Run(string[] a, OpcodeBook book, string root)
+    public static int Run(string[] a, OpcodeBook book)
     {
         string? Opt(string name) => Array.IndexOf(a, name) is var i and >= 0 && i + 1 < a.Length ? a[i + 1] : null;
         var port = Opt("--port") is { } p ? int.Parse(p, CultureInfo.InvariantCulture) : 5313;
@@ -42,9 +42,17 @@ internal static class RadarCommand
             Console.Error.WriteLine($"not found: {replay}");
             return 2;
         }
+        void Tell(string message)
+        {
+            Console.Error.WriteLine(message);
+            if (overlayOnly || !NativeConsole.HasConsole)
+                System.Windows.Forms.MessageBox.Show(message, "Cube Radar", System.Windows.Forms.MessageBoxButtons.OK,
+                    System.Windows.Forms.MessageBoxIcon.Information);
+        }
         if (replay is null && !LiveSniffer.IsNpcapInstalled())
         {
-            Console.Error.WriteLine("Npcap is not installed (https://npcap.com).");
+            Tell("Npcap ist nicht installiert.\n\nBitte von https://npcap.com herunterladen, mit den Standardoptionen installieren " +
+                 "und Cube Radar danach neu starten.");
             return 2;
         }
 
@@ -52,21 +60,18 @@ internal static class RadarCommand
         using var instance = new Mutex(initiallyOwned: true, @"Local\CubeRadar.LiveRadar", out var firstInstance);
         if (replay is null && !firstInstance)
         {
-            const string running = "Cube Radar läuft bereits.\n\nBeenden: Rechtsklick auf das Radar-Symbol unten rechts in der Taskleiste → „Beenden“ " +
-                                   "(oder ⚙ im Overlay → „Radar beenden“).";
-            Console.Error.WriteLine(running);
-            if (overlayOnly) System.Windows.Forms.MessageBox.Show(running, "Cube Radar", System.Windows.Forms.MessageBoxButtons.OK,
-                System.Windows.Forms.MessageBoxIcon.Information);
+            Tell("Cube Radar läuft bereits.\n\nBeenden: Rechtsklick auf das Radar-Symbol unten rechts in der Taskleiste → „Beenden“ " +
+                 "(oder ⚙ im Overlay → „Radar beenden“).");
             return 3;
         }
 
-        var cfg = RadarConfig.Load(Path.Combine(root, "config"), root);
+        var cfg = RadarConfig.Load(AppPaths.Config("radar.json"), AppPaths.Config("cubes.json"), AppPaths.DataRoot);
         var spots = SpotIndex.TryLoad(cfg.SpotsCsv);
-        var settings = RadarSettings.Load(Path.Combine(root, "data", "settings.json"));
+        var settings = RadarSettings.Load(Path.Combine(AppPaths.DataDir, "settings.json"));
         var overlayPng = Opt("--overlay-png");
         var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         using var store = new SqliteRadarStore(
-            replay is null ? Path.Combine(root, "data", "radar.db") : Path.Combine(Path.GetTempPath(), $"cuberadar_replay_{stamp}.db"),
+            replay is null ? Path.Combine(AppPaths.DataDir, "radar.db") : Path.Combine(Path.GetTempPath(), $"cuberadar_replay_{stamp}.db"),
             (replay is null ? "live_" : "replay_") + stamp);
         var engine = new RadarEngine(cfg, store, spots);
         if (settings.North is { } savedNorth)
@@ -78,7 +83,7 @@ internal static class RadarCommand
         string? dir = null;
         if (replay is null)
         {
-            dir = Path.Combine(root, "captures", "radar_" + stamp);
+            dir = Path.Combine(AppPaths.Captures, "radar_" + stamp);
             Directory.CreateDirectory(dir);
         }
         var record = dir is not null && !a.Contains("--no-record");
@@ -164,7 +169,7 @@ internal static class RadarCommand
         builder.WebHost.UseUrls($"http://127.0.0.1:{port}");
         var app = builder.Build();
         app.UseWebSockets();
-        var files = new PhysicalFileProvider(Path.Combine(AppContext.BaseDirectory, "wwwroot"));
+        var files = new PhysicalFileProvider(AppPaths.WebRoot);
         app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = files });
         app.UseStaticFiles(new StaticFileOptions { FileProvider = files });
         app.MapGet("/api/state", () => Results.Json(State(), Json));
@@ -230,7 +235,11 @@ internal static class RadarCommand
         GlobalHotkeys? overlayKeys = null;
         if (!a.Contains("--no-overlay"))
         {
-            var actions = new OverlayActions(() => TryOpen(url), stop.Set, PlayCubeSound, () => engine.North, SetNorth);
+            var actions = new OverlayActions(() => TryOpen(url), stop.Set, PlayCubeSound, () => engine.North, SetNorth, () =>
+            {
+                Directory.CreateDirectory(AppPaths.Captures);
+                TryOpen(AppPaths.Captures);
+            });
             overlay = OverlayWindow.Start(engine.Snapshot, settings, actions);
             overlay.ShowTray();
             if (Opt("--settings-png") is { } settingsPng) SettingsForm.SavePng(settingsPng, settings, actions);

@@ -2,12 +2,17 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <!-- tools\package.ps1 builds the shared "Cube Radar.exe" as a Windows app without a console window. -->
+    <OutputType Condition="'$(CubeRadarWindowsApp)' == 'true'">WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>cuberadar</AssemblyName>
-    <Version>0.6.0</Version>
+    <Version>0.7.0</Version>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>..\..\assets\cuberadar.ico</ApplicationIcon>
+    <Product>Cube Radar</Product>
+    <AssemblyTitle>Cube Radar</AssemblyTitle>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,6 +28,9 @@
 
   <ItemGroup>
     <Content Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <!-- The single "Cube Radar.exe" carries the web UI and the default config inside (see AppPaths). -->
+    <EmbeddedResource Include="wwwroot\**" LogicalName="wwwroot/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\config\*.json" LogicalName="config/%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

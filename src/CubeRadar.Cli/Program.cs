@@ -9,7 +9,11 @@ CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-var book = OpcodeBook.LoadDefault();
+AppPaths.Init();
+var book = File.Exists(AppPaths.Config("opcodes.json")) ? OpcodeBook.Load(AppPaths.Config("opcodes.json")) : OpcodeBook.Empty;
+
+// Double-clicked "Cube Radar.exe" (no console, no arguments): just the overlay.
+if (args.Length == 0 && !NativeConsole.HasConsole) args = ["radar", "--overlay-only"];
 
 try
 {
@@ -20,10 +24,15 @@ try
         "dump" when args.Length > 1 && args[1] == "live" => DumpLive(args[2..]),
         "dump" when args.Length > 1 => DumpFile(args[1], args[2..], writeJsonl: true),
         "census" when args.Length > 1 => DumpFile(args[1], args[2..], writeJsonl: false),
-        "radar" => RadarCommand.Run(args[1..], book, ProjectRoot()),
+        "radar" => RadarCommand.Run(args[1..], book),
         "--version" => Print(DumpSession.Version),
         _ => Usage(),
     };
+}
+catch (Exception ex) when (!NativeConsole.HasConsole && ex is not FormatException)
+{
+    NativeConsole.Notify($"Cube Radar wurde wegen eines Fehlers beendet:\n\n{ex.Message}");
+    return 1;
 }
 catch (FormatException ex)
 {
@@ -135,7 +144,7 @@ int DumpLive(string[] a)
         return 2;
     }
     var options = ParseDumpOptions(a);
-    var root = Opt(a, "--out") ?? Path.Combine(ProjectRoot(), "captures");
+    var root = Opt(a, "--out") ?? AppPaths.Captures;
     var dir = Path.Combine(root, DateTime.Now.ToString("yyyyMMdd_HHmmss"));
     Directory.CreateDirectory(dir);
     var seconds = Opt(a, "--seconds") is { } s ? int.Parse(s, CultureInfo.InvariantCulture) : 0;
@@ -206,11 +215,3 @@ static string? Opt(string[] a, string name) =>
 
 static void Log(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {message}");
 
-/// <summary>The folder holding config/opcodes.json, searched upwards from the executable and the working directory.</summary>
-static string ProjectRoot()
-{
-    foreach (var start in new[] { AppContext.BaseDirectory, Environment.CurrentDirectory })
-        for (var d = new DirectoryInfo(start); d is not null; d = d.Parent)
-            if (File.Exists(Path.Combine(d.FullName, "config", "opcodes.json"))) return d.FullName;
-    return Environment.CurrentDirectory;
-}

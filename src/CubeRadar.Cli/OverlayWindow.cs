@@ -198,17 +198,31 @@ internal sealed class OverlayWindow : Form
         menu.Items.Add("Overlay ein/aus (Strg+Umschalt+F10)", null, (_, _) => ToggleVisible());
         menu.Items.Add("Zoom wechseln (Strg+Umschalt+F12)", null, (_, _) => CycleRange());
         menu.Items.Add("Web-Ansicht öffnen", null, (_, _) => _actions.OpenWeb());
+        menu.Items.Add("Aufnahmen-Ordner öffnen", null, (_, _) => _actions.OpenCaptures());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Beenden", null, (_, _) => _actions.Quit());
         _tray = new NotifyIcon
         {
-            Icon = TrayGlyph(),
+            Icon = AppIcon(),
             Text = "Cube Radar",
             ContextMenuStrip = menu,
             Visible = true,
         };
         _tray.DoubleClick += (_, _) => OpenSettings();
     });
+
+    /// <summary>The program icon (assets/cuberadar.ico, compiled into the exe); a drawn glyph if that fails.</summary>
+    public static Icon AppIcon()
+    {
+        try
+        {
+            if (Environment.ProcessPath is { } exe && Icon.ExtractAssociatedIcon(exe) is { } icon) return icon;
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException)
+        {
+        }
+        return TrayGlyph();
+    }
 
     /// <summary>A small radar glyph: rings and a green cube.</summary>
     private static Icon TrayGlyph()

@@ -2,9 +2,9 @@ Cube Radar fuer Aion 2 (Global) - Testversion
 =============================================
 
 Was ist das?
-  Ein Windows-Programm, das den Netzwerkverkehr von Aion 2 passiv mitliest (wie Wireshark) und im Browser
-  anzeigt, wo gerade Hidden Cubes stehen: Entfernung, Richtung, Status. Es liest keinen Speicher, veraendert
-  nichts am Spiel und sendet nichts. Die Weboberflaeche laeuft nur lokal auf 127.0.0.1.
+  Ein kleines Radar ueber dem Spiel, das anzeigt, wo gerade Hidden Cubes stehen: Entfernung, Richtung, Hoehe.
+  Es liest den Netzwerkverkehr von Aion 2 nur passiv mit (wie Wireshark). Es liest keinen Speicher, veraendert
+  nichts am Spiel und sendet nichts.
 
   ACHTUNG: Laut einem anderen Tool-Autor stuft der NCSOFT-Support Software, die Spieldaten mitliest, als
   Verstoss gegen die Nutzungsbedingungen ein. Die Nutzung erfolgt auf eigenes Risiko.
@@ -12,63 +12,52 @@ Was ist das?
 Voraussetzungen
   - Windows 10/11 (64 Bit)
   - Npcap, kostenlos von https://npcap.com (Installer mit den Standardoptionen ausfuehren).
-    Falls bei der Installation "Restrict Npcap driver's access to Administrators only" angehakt wurde:
-    "Radar starten.cmd" per Rechtsklick "Als Administrator ausfuehren".
-  - Aion 2 Global
+    Falls dabei "Restrict Npcap driver's access to Administrators only" angehakt wurde:
+    "Cube Radar.exe" per Rechtsklick "Als Administrator ausfuehren".
+  - Aion 2 Global im Fenster- oder randlosen Vollbildmodus (ueber exklusivem Vollbild kann nichts
+    gezeichnet werden)
 
-Starten
-  1. ZIP in einen normalen Ordner entpacken (z. B. Dokumente\cuberadar), nicht direkt aus dem ZIP starten.
-  2. "Radar starten.cmd" doppelklicken. Windows SmartScreen meldet evtl. eine unbekannte App:
-     "Weitere Informationen" -> "Trotzdem ausfuehren".
-  3. Der Browser oeffnet http://127.0.0.1:5313. Oben "Ton an" klicken (und optional "Hinweise an").
-  4. Aion 2 starten bzw. einloggen. Kopfzeile pruefen: Capture "laeuft", "Ich" zeigt eine Nummer.
-     Steht bei Position "unbekannt": im Spiel einmal einen Buff auf dich selbst wirken.
-  Beenden: im schwarzen Konsolenfenster q eintippen und Enter.
+Starten und beenden
+  1. "Cube Radar.exe" irgendwohin legen (z. B. Desktop) und doppelklicken.
+     Windows SmartScreen meldet evtl. eine unbekannte App: "Weitere Informationen" -> "Trotzdem ausfuehren".
+  2. Unten rechts in der Taskleiste erscheint ein Radar-Symbol (evtl. hinter dem kleinen ^-Pfeil).
+  3. Aion 2 starten bzw. in die Welt gehen: Das Mini-Radar erscheint, sobald Aion 2 im Vordergrund ist.
+     Steht oben "Pos. ?": im Spiel einmal einen Buff auf dich selbst wirken.
+  Beenden: Zahnrad im Mini-Radar -> "Radar beenden", oder Rechtsklick auf das Radar-Symbol -> "Beenden".
 
-  Alternativ "Nur Overlay starten.cmd": kein Browser, kein Konsolenfenster, nur das Mini-Radar ueber dem
-  Spiel. Bedienung ueber das Radar-Symbol unten rechts in der Taskleiste (Rechtsklick): Overlay ein/aus,
-  Zoom, Web-Ansicht oeffnen, Beenden.
-
-Anzeige
-  Dreieck nach oben = Cube liegt ueber dir, nach unten = unter dir, Quadrat = gleiche Hoehe (+/- 3 m).
-  Rechts im Radar zeigt eine Hoehenleiste alle Cubes relativ zu deiner Hoehe. Deine Position kommt nur bei
-  Ereignissen (Buffs, Kampf, Teleport); ihr Alter steht oben in der Kopfzeile.
-
-Einstellungen
-  Zahnrad-Knopf oben rechts im Mini-Radar (oder Rechtsklick auf das Radar-Symbol in der Taskleiste):
-  Ton an/aus und testen, eigene .wav, Zoom, Groesse, Deckkraft, Norden, wann das Overlay sichtbar ist,
-  Position zuruecksetzen, Web-Ansicht oeffnen, Radar beenden. Aenderungen wirken sofort.
-
-Mini-Radar (kleines Fenster ueber dem Spiel)
+Mini-Radar
   Norden oben, du in der Mitte, Ringe mit Meterangabe, gestrichelt die Sichtweite (~100 m), duenn deine
   letzte Laufspur (zeigt, woher du kommst). Cubes als Dreieck hoch/runter (ueber/unter dir) oder Quadrat
   (gleiche Hoehe) mit z. B. "86 m ▲38". Cubes ausserhalb des Zooms: Doppelpfeil » am Rand.
-  Es nimmt dem Spiel nie den Fokus. Das Spiel muss im Fenster- oder randlosen Vollbildmodus laufen
-  (ueber exklusivem Vollbild kann nichts gezeichnet werden).
-  Verschieben: einfach mit der Maus ziehen (Position wird gespeichert). Zoom: Mausrad ueber dem Overlay.
-  Es ist nur sichtbar, wenn Aion 2 im Vordergrund ist, und blendet sich aus, solange der Mauszeiger
-  sichtbar ist (Menues). Faehrst du mit dem Zeiger an seine Stelle, erscheint es zum Greifen.
-  Strg+Umschalt+F10 = ganz aus/an
-  Strg+Umschalt+F12 = Zoom 60 / 120 / 250 m
+  Neuer Cube = Piepton.
+  Verschieben: einfach mit der Maus ziehen. Zoom: Mausrad ueber dem Radar.
+  Es blendet sich aus, wenn Aion 2 nicht im Vordergrund ist oder der Mauszeiger sichtbar ist (Menues).
+  Faehrst du mit dem Zeiger an seine Stelle, erscheint es zum Greifen.
+  Strg+Umschalt+F10 = ganz aus/an, Strg+Umschalt+F12 = Zoom 60 / 120 / 250 m
+
+Einstellungen
+  Zahnrad oben rechts im Mini-Radar (oder Doppelklick auf das Radar-Symbol in der Taskleiste):
+  Ton an/aus und testen, eigene .wav, Zoom, Groesse, Deckkraft, Norden, wann das Radar sichtbar ist,
+  Position zuruecksetzen, Web-Ansicht oeffnen (grosse Karte und Liste im Browser), Aufnahmen-Ordner oeffnen,
+  Radar beenden. Aenderungen wirken sofort.
 
 Testauftrag (ca. 15-20 Minuten in Verteron oder Altgard)
   1. In ein Gebiet mit vielen Cube-Spots laufen.
-  2. Wenn das Radar piept: Entfernung und Richtung in der Liste merken. Erst wenn du den Cube im Spiel
-     WIRKLICH siehst: Strg+Umschalt+F5 druecken.
-  3. In die angezeigte Richtung laufen (zwischendurch kurz stehen bleiben oder einen Buff wirken, das
-     aktualisiert deine Position). Stimmt die Richtung nicht mit der Minimap ueberein (gespiegelt oder
-     um 90 Grad gedreht), oben bei "Norden" umstellen, bis es passt, und die passende Einstellung notieren.
+  2. Wenn das Radar piept: Entfernung und Richtung merken. Erst wenn du den Cube im Spiel WIRKLICH siehst:
+     Strg+Umschalt+F5 druecken.
+  3. In die angezeigte Richtung laufen. Stimmt die Richtung nicht mit der Minimap ueberein (gespiegelt oder
+     um 90 Grad gedreht), in den Einstellungen bei "Norden" umstellen, bis es passt, und die Einstellung notieren.
   4. Cube oeffnen und Strg+Umschalt+F6 druecken.
-  5. Mindestens 2 Cubes so testen. Optional: einen Cube stehen lassen, weglaufen, bis er verschwindet,
-     dann Strg+Umschalt+F7.
+  5. Mindestens 2 Cubes so testen.
 
   Hinweis Altgard/Asmodier: Dort ist die Cube-Kennung noch nicht an eigenen Daten bestaetigt. Spaetestens
-  nachdem du dort einen Cube mit Key geoeffnet hast, lernt das Radar sie und zeigt die folgenden an.
+  nachdem jemand in deiner Naehe dort einen Cube mit Key geoeffnet hat, lernt das Radar sie.
 
 Rueckmeldung
   - Kurz notieren: Cube vor dem Sehen angezeigt? An der angezeigten Stelle gefunden? Welche "Norden"-Einstellung?
-  - Den Ordner captures\radar_<datum_zeit> (liegt neben dem Programm) zippen und zurueckschicken.
+  - Einstellungen -> "Aufnahmen-Ordner oeffnen", den neuesten Ordner radar_<datum_zeit> zippen und schicken.
     Er enthaelt deinen mitgeschnittenen Spielverkehr inkl. Charakternamen und Chat: nur an Vertrauenspersonen geben.
+  - Alle Daten liegen unter %LOCALAPPDATA%\CubeRadar (Aufnahmen, Datenbank, Einstellungen).
 
 Lizenz
   GPL-3.0 (siehe LICENSE). Teile stammen aus cyberbadger6969/aion2-dps-meter. Quelltext: source.zip.

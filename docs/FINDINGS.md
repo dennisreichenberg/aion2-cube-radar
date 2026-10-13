@@ -413,3 +413,10 @@ Interaktionsreichweite (≈ 2 m, B7).
     Web-Ansicht, Beenden.
   - Änderungen werden sofort angewendet und gespeichert.
   - Solange das eigene Einstellungsfenster vorne ist, bleibt das Overlay sichtbar.
+- **2026-10-13 (Radar 0.7.0):** Einzelne Datei `Cube Radar.exe`.
+  - Windows-App ohne Konsole, self-contained und komprimiert.
+  - Web-Oberfläche und Standard-Konfiguration sind eingebettet und werden nach `%LOCALAPPDATA%\CubeRadar\app\<version>`
+    entpackt; Daten liegen in `%LOCALAPPDATA%\CubeRadar`.
+  - Ein Doppelklick startet das Overlay.
+  - Fehler (Npcap fehlt, läuft bereits, Absturz) erscheinen als Hinweisfenster.
+  - Eigenes Programm-Symbol; neuer Menüpunkt „Aufnahmen-Ordner öffnen“.

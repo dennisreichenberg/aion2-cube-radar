@@ -9,7 +9,8 @@ internal sealed record OverlayActions(
     Action Quit,
     Action TestSound,
     Func<string> GetNorth,
-    Action<string> SetNorth);
+    Action<string> SetNorth,
+    Action OpenCaptures);
 
 /// <summary>
 /// Settings opened from the overlay's gear button (or the tray). Every change applies at once and is saved; there is
@@ -41,6 +42,7 @@ internal sealed class SettingsForm : Form
     public SettingsForm(RadarSettings settings, OverlayActions actions, Action applied, Action resetPosition)
     {
         Text = "Cube Radar – Einstellungen";
+        Icon = OverlayWindow.AppIcon();
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = MinimizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
@@ -143,7 +145,9 @@ internal sealed class SettingsForm : Form
         reset.Click += (_, _) => resetPosition();
         var web = Btn("Web-Ansicht öffnen");
         web.Click += (_, _) => actions.OpenWeb();
-        Full(Flow(reset, web));
+        var captures = Btn("Aufnahmen-Ordner öffnen");
+        captures.Click += (_, _) => actions.OpenCaptures();
+        Full(Flow(reset, web, captures));
         Full(new Label { Text = "Hotkeys: Strg+Umschalt+F10 = Overlay an/aus · Strg+Umschalt+F12 = Zoom · Verschieben: Overlay mit der Maus ziehen",
             AutoSize = true, ForeColor = Muted, MaximumSize = new Size(420, 0), Margin = new Padding(0, 8, 0, 0) });
 

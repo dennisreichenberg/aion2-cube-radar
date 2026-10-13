@@ -34,6 +34,16 @@ Die ausführbare Datei liegt dann unter `src\CubeRadar.Cli\bin\Release\net10.0-w
 
 ## Radar
 
+**Als einzelne Datei zum Weitergeben:** `powershell -File tools\package.ps1` baut `dist\Cube Radar.exe`.
+- Die Datei enthält .NET, die Web-Oberfläche und die Standard-Konfiguration; ein Doppelklick startet direkt das
+  Overlay, ohne Konsole.
+- Daten (Aufnahmen, Datenbank, Einstellungen, Log) liegen in `%LOCALAPPDATA%\CubeRadar`.
+- Eine eigene Konfigurationsdatei in `%LOCALAPPDATA%\CubeRadar\config\` (z. B. `radar.json` mit neuen Opcodes nach
+  einem Patch) hat Vorrang vor der eingebauten.
+- Das Programm-Symbol erzeugt `tools\make_icon.ps1` (`assets\cuberadar.ico`).
+
+Im Repository:
+
 ```powershell
 .\cuberadar.cmd radar      # volle Ansicht: Browser + Overlay + Konsole
 .\overlay.cmd              # nur das Overlay: kein Browser, keine Konsole, Tray-Symbol
