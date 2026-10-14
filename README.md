@@ -44,6 +44,24 @@ dotnet test CubeRadar.slnx -c Release
 
 Die ausführbare Datei liegt dann unter `src\CubeRadar.Cli\bin\Release\net10.0-windows\cuberadar.exe`. Kurz: `.\cuberadar.cmd`.
 
+## Neue Version veröffentlichen
+
+GitHub baut und veröffentlicht die exe selbst ([`.github/workflows/release.yml`](.github/workflows/release.yml)):
+
+1. `<Version>` in `src/CubeRadar.Cli/CubeRadar.Cli.csproj` und `src/CubeRadar.Core/CubeRadar.Core.csproj` erhöhen,
+   committen, pushen.
+2. Tag mit Beschreibung anlegen und pushen:
+   ```powershell
+   git tag -a v0.8.1 -m "- Was neu ist, ein Punkt pro Zeile"
+   git push origin v0.8.1
+   ```
+   Die Tag-Beschreibung wird im Release zu „Neu in 0.8.1“. Ohne Beschreibung stehen dort die Commit-Betreffs seit dem
+   letzten Tag.
+3. Die Action prüft, dass Tag und Version passen, testet, baut `Cube Radar.exe` und legt das Release mit
+   `Cube.Radar.exe` und Prüfsumme an. Laufende Radare melden das Update beim nächsten Start bzw. innerhalb von 6 Stunden.
+
+Lokal baut `tools\package.ps1` dieselbe exe; läuft sie gerade, wird sie vorher per `--quit` beendet.
+
 ## Radar
 
 **Als einzelne Datei zum Weitergeben:** `powershell -File tools\package.ps1` baut `dist\Cube Radar.exe`.
