@@ -25,3 +25,6 @@ dist/
 
 # Per-user radar settings (overlay position, sound), created on first start
 data/settings.json
+
+# Original project brief, kept locally only
+START_PROMPT.md

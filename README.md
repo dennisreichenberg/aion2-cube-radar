@@ -6,6 +6,16 @@ live anzeigen, wo gerade Hidden Cubes stehen. Es betreibt kein Memory-Reading un
 Stand: **Phase 3 (Radar) abgenommen**. Der Hidden Cube ist in Verteron identifiziert (Templates 1200039 und 1200041, Sende-Radius ≈ 100 m). Die eigene Position kommt aus vier ereignisgebundenen Quellen. Alle Erkenntnisse stehen in
 [`docs/FINDINGS.md`](docs/FINDINGS.md).
 
+## Download
+
+Fertige Version für Windows 10/11 (64 Bit): unter [**Releases**](https://github.com/dennisreichenberg/aion2-cube-radar/releases/latest)
+die Datei `Cube.Radar.exe` herunterladen und doppelklicken. Eine Installation ist nicht nötig, .NET ist enthalten.
+Voraussetzung ist [Npcap](https://npcap.com) (Installer mit Standardoptionen). Bedienung und Hinweise stehen in der
+[LIESMICH](docs/LIESMICH_TESTER.txt).
+
+> **Achtung:** Laut einem anderen Tool-Autor stuft der NCSOFT-Support Software, die Spieldaten mitliest, als Verstoß
+> gegen die Nutzungsbedingungen ein. Die Nutzung erfolgt auf eigenes Risiko.
+
 ## Aufbau
 
 | Pfad | Inhalt |
