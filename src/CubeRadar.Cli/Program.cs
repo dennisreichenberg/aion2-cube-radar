@@ -4,13 +4,21 @@ using CubeRadar.Core.Capture;
 using CubeRadar.Core.Dump;
 using CubeRadar.Core.Protocol;
 
-// aion2-cube-radar developer tool. Strictly passive: reads packets through Npcap, never sends or alters anything.
+// aion2-cube-radar developer tool. Strictly passive: reads packets through Npcap, never sends anything to the game or
+// alters it. The only internet access is the optional update check of the single exe (Updater).
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 
+// A downloaded update, started by the old radar to take its place (see Updater).
+if (args is [Updater.InstallFlag, .. var install]) return Updater.RunInstaller(install);
+
 AppPaths.Init();
 var book = File.Exists(AppPaths.Config("opcodes.json")) ? OpcodeBook.Load(AppPaths.Config("opcodes.json")) : OpcodeBook.Empty;
+
+// The updater restarts the new exe with the previous arguments plus --after-update.
+var afterUpdate = args.Contains(Updater.AfterUpdateFlag);
+if (afterUpdate) args = [.. args.Where(x => x != Updater.AfterUpdateFlag)];
 
 // Double-clicked "Cube Radar.exe" (no console, no arguments): just the overlay.
 if (args.Length == 0 && !NativeConsole.HasConsole) args = ["radar", "--overlay-only"];
@@ -24,8 +32,9 @@ try
         "dump" when args.Length > 1 && args[1] == "live" => DumpLive(args[2..]),
         "dump" when args.Length > 1 => DumpFile(args[1], args[2..], writeJsonl: true),
         "census" when args.Length > 1 => DumpFile(args[1], args[2..], writeJsonl: false),
-        "radar" => RadarCommand.Run(args[1..], book),
+        "radar" => RadarCommand.Run(args[1..], book, afterUpdate),
         "--version" => Print(DumpSession.Version),
+        "--quit" => Quit(),
         _ => Usage(),
     };
 }
@@ -74,6 +83,8 @@ int Usage()
             --no-overlay       no mini radar overlay (drag it with the mouse; Ctrl+Shift+F10 on/off, F12 range)
             --overlay-only     only the overlay: no browser, console hidden (log in the session folder);
                                tray icon to open the web view or quit
+        cuberadar --quit                           ask the running radar to close (like "Beenden" in the tray)
+        cuberadar --version                        print the version
 
         Console during 'dump live': Enter = marker (text optional), 1-5 = the hotkey markers, q = stop.
         """);
@@ -83,6 +94,18 @@ int Usage()
 int Print(string s)
 {
     Console.WriteLine(s);
+    return 0;
+}
+
+int Quit()
+{
+    if (!EventWaitHandle.TryOpenExisting(RadarCommand.QuitSignalName, out var signal))
+    {
+        Console.WriteLine("no live radar is running");
+        return 1;
+    }
+    using (signal) signal.Set();
+    Console.WriteLine("asked the radar to quit");
     return 0;
 }
 

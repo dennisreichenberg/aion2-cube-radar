@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace CubeRadar.Cli;
 
-/// <summary>Per-user radar settings in <c>data/settings.json</c>: north axis, sound and overlay.</summary>
+/// <summary>Per-user radar settings in <c>data/settings.json</c>: north axis, sound, overlay and update check.</summary>
 internal sealed class RadarSettings
 {
     private static readonly JsonSerializerOptions Json = new()
@@ -30,6 +30,8 @@ internal sealed class RadarSettings
     public string? SoundFile { get; set; }
     /// <summary>Volume of the sound, 5–100 %.</summary>
     public int SoundVolumePct { get; set; } = 80;
+    /// <summary>Look for a newer version on GitHub at start and every 6 hours (single exe only, see Updater).</summary>
+    public bool UpdateCheckEnabled { get; set; } = true;
 
     public static RadarSettings Load(string path)
     {

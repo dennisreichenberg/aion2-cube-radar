@@ -4,6 +4,7 @@ using System.Drawing.Text;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using CubeRadar.Core.Radar;
+using CubeRadar.Core.Update;
 
 namespace CubeRadar.Cli;
 
@@ -35,6 +36,7 @@ internal sealed class OverlayWindow : Form
     private long _gamePidsAt = -10_000;
     private long _cursorShownSince = -1;
     private NotifyIcon? _tray;
+    private ToolStripMenuItem? _updateItem;
 
     public OverlayWindow(Func<RadarSnapshot> snapshot, RadarSettings settings, OverlayActions actions)
     {
@@ -137,7 +139,7 @@ internal sealed class OverlayWindow : Form
             _settingsForm.Activate();
             return;
         }
-        _settingsForm = new SettingsForm(_settings, _actions, ApplySettings, ResetPosition);
+        _settingsForm = new SettingsForm(_settings, _actions, ApplySettings, ResetPosition, ConfirmUpdate);
         _settingsForm.Show();
     });
 
@@ -190,10 +192,13 @@ internal sealed class OverlayWindow : Form
         Application.ExitThread();
     });
 
-    /// <summary>Tray icon with a menu: overlay on/off, range, web view, quit.</summary>
+    /// <summary>Tray icon with a menu: overlay on/off, range, web view, quit; and an update entry once one is found.</summary>
     public void ShowTray() => Ui(() =>
     {
         var menu = new ContextMenuStrip();
+        _updateItem = new ToolStripMenuItem { Visible = false, Font = new Font(menu.Font, FontStyle.Bold) };
+        _updateItem.Click += (_, _) => ConfirmUpdate();
+        menu.Items.Add(_updateItem);
         menu.Items.Add("Einstellungen …", null, (_, _) => OpenSettings());
         menu.Items.Add("Overlay ein/aus (Strg+Umschalt+F10)", null, (_, _) => ToggleVisible());
         menu.Items.Add("Zoom wechseln (Strg+Umschalt+F12)", null, (_, _) => CycleRange());
@@ -209,6 +214,45 @@ internal sealed class OverlayWindow : Form
             Visible = true,
         };
         _tray.DoubleClick += (_, _) => OpenSettings();
+        _tray.BalloonTipClicked += (_, _) => ConfirmUpdate();
+        if (_actions.Updater is { } updater) updater.Found += OnUpdateFound;
+    });
+
+    /// <summary>A newer version exists: tray entry plus a one-time notification (it never takes the focus).</summary>
+    private void OnUpdateFound(ReleaseInfo release) => Ui(() =>
+    {
+        if (_tray is null || _updateItem is null) return;
+        var version = release.Version.ToString(3);
+        _updateItem.Text = release.Installable ? $"Update auf {version} installieren …" : $"Version {version} herunterladen …";
+        _updateItem.Visible = true;
+        _tray.ShowBalloonTip(10_000, "Cube Radar", $"Version {version} ist verfügbar. Zum Aktualisieren hier klicken.", ToolTipIcon.Info);
+    });
+
+    /// <summary>Asks before installing the available update; without a verifiable exe it offers the release page.</summary>
+    public void ConfirmUpdate() => Ui(async () =>
+    {
+        if (_actions.Updater is not { Available: { } release, Installing: false } updater) return;
+        var version = release.Version.ToString(3);
+        // The settings window is topmost: an unowned message box could open hidden behind it.
+        var owner = _settingsForm is { IsDisposed: false, Visible: true } ? _settingsForm : null;
+        DialogResult Ask(string text, MessageBoxIcon icon) => MessageBox.Show(owner, text, "Cube Radar – Update", MessageBoxButtons.YesNo, icon);
+
+        if (!release.Installable)
+        {
+            if (Ask($"Cube Radar {version} ist verfügbar, kann sich aber nicht selbst installieren.\n\nRelease-Seite öffnen?",
+                    MessageBoxIcon.Information) == DialogResult.Yes)
+                updater.OpenPage();
+            return;
+        }
+        if (Ask($"Cube Radar {version} ist verfügbar (installiert: {Updater.Current.ToString(3)}).\n\n" +
+                "Jetzt herunterladen und installieren? Das Radar startet danach neu, Einstellungen und Daten bleiben erhalten.",
+                MessageBoxIcon.Question) != DialogResult.Yes)
+            return;
+        _tray?.ShowBalloonTip(5_000, "Cube Radar", $"Version {version} wird heruntergeladen …", ToolTipIcon.Info);
+        if (await updater.InstallAsync() is { } error
+            && Ask($"Das Update hat nicht geklappt:\n\n{error}\n\nRelease-Seite öffnen, um es von Hand herunterzuladen?",
+                MessageBoxIcon.Warning) == DialogResult.Yes)
+            updater.OpenPage();
     });
 
     /// <summary>The program icon (assets/cuberadar.ico, compiled into the exe); a drawn glyph if that fails.</summary>

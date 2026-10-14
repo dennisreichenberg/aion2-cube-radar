@@ -10,7 +10,8 @@ internal sealed record OverlayActions(
     Action TestSound,
     Func<string> GetNorth,
     Action<string> SetNorth,
-    Action OpenCaptures);
+    Action OpenCaptures,
+    Updater? Updater = null);
 
 /// <summary>
 /// Settings opened from the overlay's gear button (or the tray). Every change applies at once and is saved; there is
@@ -39,7 +40,7 @@ internal sealed class SettingsForm : Form
     [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
-    public SettingsForm(RadarSettings settings, OverlayActions actions, Action applied, Action resetPosition)
+    public SettingsForm(RadarSettings settings, OverlayActions actions, Action applied, Action resetPosition, Action confirmUpdate)
     {
         Text = "Cube Radar – Einstellungen";
         Icon = OverlayWindow.AppIcon();
@@ -156,6 +157,44 @@ internal sealed class SettingsForm : Form
         menus.CheckedChanged += (_, _) => { settings.OverlayHideInMenus = menus.Checked; Save(); };
         Full(menus);
 
+        // ---- updates (single exe only)
+        if (actions.Updater is { } updater)
+        {
+            Section("Updates");
+            var auto = Check("Automatisch nach Updates suchen (beim Start und alle 6 Stunden, bei GitHub)", settings.UpdateCheckEnabled);
+            auto.CheckedChanged += (_, _) => updater.SetEnabled(auto.Checked);
+            Full(auto);
+            var state = new Label { AutoSize = true, ForeColor = Muted, MaximumSize = new Size(420, 0), Margin = new Padding(0, 2, 0, 2) };
+            var check = Btn("Jetzt prüfen");
+            check.Click += (_, _) => _ = updater.CheckAsync();
+            var install = Btn("Jetzt aktualisieren");
+            install.Click += (_, _) => confirmUpdate();
+            var page = Btn("Versionen auf GitHub");
+            page.Click += (_, _) => updater.OpenPage();
+            void Refresh()
+            {
+                state.Text = $"Installiert: {Updater.Current.ToString(3)} · {updater.State}";
+                check.Enabled = !updater.Installing;
+                install.Enabled = updater.Available is not null && !updater.Installing;
+            }
+            void OnChanged()
+            {
+                try
+                {
+                    if (IsHandleCreated) BeginInvoke(Refresh);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException)
+                {
+                    // the window is closing
+                }
+            }
+            Refresh();
+            updater.Changed += OnChanged;
+            Disposed += (_, _) => updater.Changed -= OnChanged;
+            Full(state);
+            Full(Flow(check, install, page));
+        }
+
         // ---- actions
         Section("Sonstiges");
         var reset = Btn("Position zurücksetzen");
@@ -187,7 +226,7 @@ internal sealed class SettingsForm : Form
         var t = new Thread(() =>
         {
             // Controls are only created when the window is shown: show it far off-screen, without taking the focus.
-            using var form = new SettingsForm(settings, actions, () => { }, () => { })
+            using var form = new SettingsForm(settings, actions, () => { }, () => { }, () => { })
             {
                 StartPosition = FormStartPosition.Manual,
                 Location = new Point(-30_000, -30_000),

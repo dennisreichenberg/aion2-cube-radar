@@ -2,7 +2,8 @@
 
 Cube Radar zeigt in einem kleinen Mini-Radar über dem Spiel, wo gerade Hidden Cubes stehen: Entfernung, Richtung
 und Höhe. Es liest den Netzwerkverkehr von Aion 2 nur passiv mit (wie Wireshark). Es liest keinen Speicher,
-verändert nichts am Spiel und sendet nichts.
+verändert nichts am Spiel und sendet nichts an das Spiel. Ins Internet geht es nur für die Suche nach Updates bei
+GitHub, und die lässt sich abschalten (siehe [Updates](#8-updates)).
 
 > **Achtung:** Laut einem anderen Tool-Autor stuft der NCSOFT-Support Software, die Spieldaten mitliest, als Verstoß
 > gegen die Nutzungsbedingungen ein. Die Nutzung erfolgt auf eigenes Risiko.
@@ -93,6 +94,8 @@ werden gespeichert.
 - **Norden:** Zeigt der Cube in eine andere Richtung als auf der Minimap im Spiel (gespiegelt oder um 90° gedreht),
   hier umstellen, bis es passt. Standard ist „−Y“.
 - **Wann ist das Overlay sichtbar?** „Nur wenn Aion 2 im Vordergrund ist“ und „In Menüs ausblenden“.
+- **Updates:** automatische Suche an/aus, „Jetzt prüfen“, „Jetzt aktualisieren“, „Versionen auf GitHub“ (siehe
+  [Updates](#8-updates)).
 - **Sonstiges:** Position zurücksetzen (falls das Radar außerhalb des Bildschirms gelandet ist), Web-Ansicht öffnen,
   Aufnahmen-Ordner öffnen, Radar beenden.
 
@@ -112,7 +115,24 @@ Der Hidden Cube ist in **Verteron** bestätigt. In anderen Gebieten, z. B. **Alt
 nicht an eigenen Daten bestätigt. Das Radar lernt sie, sobald dort in deiner Nähe ein Cube mit Schlüssel geöffnet
 wird.
 
-## 8. Probleme lösen
+## 8. Updates
+
+Das Radar sucht beim Start und danach alle 6 Stunden bei GitHub nach einer neuen Version.
+
+- Gibt es eine, erscheint unten rechts ein Hinweis, und im Menü des Radar-Symbols steht „Update auf … installieren“.
+  Ein Klick darauf (oder Einstellungen → „Jetzt aktualisieren“) fragt nach, lädt die neue Version, prüft ihre
+  Prüfsumme, beendet das Radar und startet es nach ein paar Sekunden in der neuen Version neu. Einstellungen und Daten
+  bleiben erhalten. Ohne deine Zustimmung wird nichts installiert.
+- Dabei taucht neben der exe kurz eine `Cube Radar.update.exe` auf; sie verschwindet nach dem Neustart von selbst.
+- Was GitHub dabei sieht: eine Anfrage nach der neuesten Version mit deiner IP-Adresse und der Kennung
+  `CubeRadar/<Version>`. Sonst nichts, insbesondere keine Spieldaten.
+- **Abschalten:** Einstellungen → „Automatisch nach Updates suchen“. Dann verbindet sich das Radar gar nicht mehr mit
+  dem Internet; „Jetzt prüfen“ fragt nur, wenn du es anklickst.
+- Liegt die exe in einem Ordner ohne Schreibrecht (z. B. unter „Programme“), kann sie sich nicht selbst ersetzen. Dann
+  die neue Version von der [Release-Seite](https://github.com/dennisreichenberg/aion2-cube-radar/releases/latest)
+  herunterladen.
+
+## 9. Probleme lösen
 
 - **Radar erscheint nicht:** Ist Aion 2 das aktive Fenster? Läuft das Spiel im Fenster- oder randlosen
   Vollbildmodus? Mit `Strg+Umschalt+F10` versehentlich ausgeschaltet? Notfalls Einstellungen → „Position
@@ -127,7 +147,7 @@ wird.
 - **Nach einem Spiel-Patch keine Cubes mehr:** Das Spiel hat vermutlich seine Paketnummern geändert. In der
   Web-Ansicht erscheint dann ein roter Hinweis. Bitte auf eine neue Version warten.
 
-## 9. Daten und Deinstallation
+## 10. Daten und Deinstallation
 
 - Alles, was das Radar speichert, liegt in `%LOCALAPPDATA%\CubeRadar` (Explorer-Adressleiste): Aufnahmen,
   Cube-Datenbank, Einstellungen, Log.

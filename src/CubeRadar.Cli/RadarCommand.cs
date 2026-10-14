@@ -23,7 +23,14 @@ internal static class RadarCommand
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-    public static int Run(string[] a, OpcodeBook book)
+    /// <summary>Named event the live radar waits on; setting it closes the radar (see Program, "--quit").</summary>
+    public const string QuitSignalName = @"Local\CubeRadar.Quit";
+
+    /// <summary>Held by the live radar while it runs: one at a time, and the update installer waits for it.</summary>
+    public const string InstanceLockName = @"Local\CubeRadar.LiveRadar";
+
+    /// <param name="afterUpdate">Started by the updater: the old radar is still shutting down, wait for it.</param>
+    public static int Run(string[] a, OpcodeBook book, bool afterUpdate = false)
     {
         string? Opt(string name) => Array.IndexOf(a, name) is var i and >= 0 && i + 1 < a.Length ? a[i + 1] : null;
         var port = Opt("--port") is { } p ? int.Parse(p, CultureInfo.InvariantCulture) : 5313;
@@ -57,7 +64,9 @@ internal static class RadarCommand
         }
 
         // One live radar at a time: a second one would fight over hotkeys, the web port and the capture.
-        using var instance = new Mutex(initiallyOwned: true, @"Local\CubeRadar.LiveRadar", out var firstInstance);
+        // A radar that is just closing gets a moment (a quick restart); after an update the installer already waited.
+        using var instance = new Mutex(initiallyOwned: true, InstanceLockName, out var firstInstance);
+        if (replay is null && !firstInstance) firstInstance = WaitFor(instance, TimeSpan.FromSeconds(afterUpdate ? 60 : 3));
         if (replay is null && !firstInstance)
         {
             Tell("Cube Radar läuft bereits.\n\nBeenden: Rechtsklick auf das Radar-Symbol unten rechts in der Taskleiste → „Beenden“ " +
@@ -99,6 +108,10 @@ internal static class RadarCommand
             e.Cancel = true;
             stop.Set();
         };
+        // "cuberadar --quit" asks the live radar to close, like "Beenden" in the tray.
+        using var quitSignal = replay is null ? new EventWaitHandle(false, EventResetMode.AutoReset, QuitSignalName) : null;
+        if (quitSignal is not null)
+            ThreadPool.RegisterWaitForSingleObject(quitSignal, (_, _) => stop.Set(), null, Timeout.Infinite, executeOnlyOnce: true);
 
         LiveSniffer? sniffer = null;
         var replayState = "";
@@ -115,6 +128,9 @@ internal static class RadarCommand
         object State() => new { radar = engine.Snapshot(), capture = CaptureView(), wallMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() };
 
         using var hub = new SnapshotHub(() => JsonSerializer.SerializeToUtf8Bytes(State(), Json));
+        // Cancelled when the radar closes: an open web view would otherwise hold the web server for its full 30 s
+        // shutdown timeout (the browser never closes its WebSocket by itself).
+        using var closing = new CancellationTokenSource();
 
         void PlayCubeSound()
         {
@@ -181,13 +197,14 @@ internal static class RadarCommand
                 return;
             }
             using var ws = await ctx.WebSockets.AcceptWebSocketAsync();
+            using var closingOrAborted = CancellationTokenSource.CreateLinkedTokenSource(ctx.RequestAborted, closing.Token);
             var id = hub.Add(ws);
             var buffer = new byte[256];
             try
             {
                 while (ws.State == WebSocketState.Open)
                 {
-                    var r = await ws.ReceiveAsync(buffer, ctx.RequestAborted);
+                    var r = await ws.ReceiveAsync(buffer, closingOrAborted.Token);
                     if (r.MessageType == WebSocketMessageType.Close) break;
                 }
             }
@@ -213,6 +230,11 @@ internal static class RadarCommand
         using var markers = new MarkerInput(session, bindings, beep, stop.Set);
         markers.PrintHelp();
 
+        // Only the single "Cube Radar.exe" updates itself; a build in the repository is updated with git.
+        using var updater = replay is null && AppPaths.SingleExe && Environment.ProcessPath is { } exe
+            ? new Updater(settings, exe, stop.Set)
+            : null;
+
         OverlayWindow? overlay = null;
         GlobalHotkeys? overlayKeys = null;
         if (!a.Contains("--no-overlay"))
@@ -221,7 +243,7 @@ internal static class RadarCommand
             {
                 Directory.CreateDirectory(AppPaths.Captures);
                 TryOpen(AppPaths.Captures);
-            });
+            }, updater);
             overlay = OverlayWindow.Start(engine.Snapshot, settings, actions);
             overlay.ShowTray();
             if (Opt("--settings-png") is { } settingsPng) SettingsForm.SavePng(settingsPng, settings, actions);
@@ -233,6 +255,12 @@ internal static class RadarCommand
                 });
             foreach (var (b, ok, err) in overlayKeys.Results)
                 Console.WriteLine($"  hotkey {b.Display,-16} → {b.Label,-18} {(ok ? "ok" : $"NOT registered (error {err})")}");
+        }
+        if (updater is not null)
+        {
+            Console.WriteLine($"version {Updater.Current.ToString(3)} · update check {(settings.UpdateCheckEnabled ? "on" : "off")}" +
+                              (afterUpdate ? " · started by the updater" : ""));
+            updater.Start();
         }
 
         if (replay is null)
@@ -281,18 +309,58 @@ internal static class RadarCommand
                 (s.Warnings.Count > 0 ? $" · WARN {string.Join(" | ", s.Warnings)}" : ""));
         }
 
-        overlayKeys?.Dispose();
-        overlay?.Shutdown();
-        CubeSound.Close();
-        sniffer?.Stop();
-        sniffer?.Dispose();
-        app.StopAsync().GetAwaiter().GetResult();
-        session.Finish(dir is null ? null : Path.Combine(dir, "census.json"));
+        var shutdown = Stopwatch.StartNew();
+        var steps = new List<string>();
+        void Step(string name, Action action)
+        {
+            var t = shutdown.ElapsedMilliseconds;
+            action();
+            steps.Add($"{name} {shutdown.ElapsedMilliseconds - t} ms");
+        }
+        Step("overlay", () =>
+        {
+            overlayKeys?.Dispose();
+            overlay?.Shutdown();
+            CubeSound.Close();
+        });
+        Step("capture", () =>
+        {
+            sniffer?.Stop();
+            sniffer?.Dispose();
+        });
+        Step("web", () =>
+        {
+            closing.Cancel();
+            using var grace = new CancellationTokenSource(TimeSpan.FromSeconds(2)); // never the default 30 s
+            try
+            {
+                app.StopAsync(grace.Token).GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException)
+            {
+                // the grace period is over; the process ends anyway
+            }
+        });
+        Step("session", () => session.Finish(dir is null ? null : Path.Combine(dir, "census.json")));
+        Log($"shutdown in {shutdown.ElapsedMilliseconds} ms ({string.Join(", ", steps)})");
         if (dir is not null) Console.WriteLine($"session: {dir}");
         return 0;
     }
 
     private static void Log(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {message}");
+
+    /// <summary>Waits until the other radar releases the single-instance lock (or ends without releasing it).</summary>
+    private static bool WaitFor(Mutex instance, TimeSpan timeout)
+    {
+        try
+        {
+            return instance.WaitOne(timeout);
+        }
+        catch (AbandonedMutexException)
+        {
+            return true; // the old process ended while holding it; the lock is ours now
+        }
+    }
 
     /// <summary>Overlay-only mode: no console window; everything that would be printed goes to a log file.</summary>
     private static void HideConsole(string logPath)

@@ -12,6 +12,7 @@ public class PipelineTests
     private static readonly byte[] Server = [104, 18, 0, 1], Client = [192, 168, 1, 20];
 
     [Fact]
+    [Trait("Needs", "Npcap")] // libpcap reads the file back; the GitHub runner has no Npcap
     public void Pcapng_roundtrip_through_the_dump_pipeline()
     {
         var dir = Directory.CreateTempSubdirectory("cuberadar-test").FullName;

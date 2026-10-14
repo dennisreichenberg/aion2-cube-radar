@@ -4,7 +4,8 @@ Cube Radar fuer Aion 2 (Global) - Testversion
 Was ist das?
   Ein kleines Radar ueber dem Spiel, das anzeigt, wo gerade Hidden Cubes stehen: Entfernung, Richtung, Hoehe.
   Es liest den Netzwerkverkehr von Aion 2 nur passiv mit (wie Wireshark). Es liest keinen Speicher, veraendert
-  nichts am Spiel und sendet nichts.
+  nichts am Spiel und sendet nichts an das Spiel. Ins Internet geht es nur fuer die Update-Suche bei GitHub
+  (abschaltbar in den Einstellungen).
 
   ACHTUNG: Laut einem anderen Tool-Autor stuft der NCSOFT-Support Software, die Spieldaten mitliest, als
   Verstoss gegen die Nutzungsbedingungen ein. Die Nutzung erfolgt auf eigenes Risiko.

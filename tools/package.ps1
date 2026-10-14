@@ -24,16 +24,28 @@ if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed" }
 
 $exe = Join-Path $stage "Cube Radar.exe"
 Copy-Item (Join-Path $publish "cuberadar.exe") $exe
-# A running radar locks dist\Cube Radar.exe, but Windows lets it be renamed: it is moved aside (and removed on a
-# later run, once it has quit), so the next double-click starts the new version.
+# A running radar locks dist\Cube Radar.exe. Moving it aside is not enough: a running single-file exe later loads parts
+# of itself from its path and breaks. So it is asked to quit (the signal of "cuberadar --quit") and given 10 s.
 $shared = Join-Path $dist "Cube Radar.exe"
-Get-ChildItem $dist -Filter "Cube Radar.*.old" | Remove-Item -Force -ErrorAction SilentlyContinue
-if (Test-Path $shared)
+Get-ChildItem $dist -Filter "Cube Radar.*.old" | Remove-Item -Force -ErrorAction SilentlyContinue # left by older versions
+function Test-Locked([string]$path)
 {
-    try { Remove-Item $shared -Force -ErrorAction Stop }
-    catch { Rename-Item $shared ("Cube Radar.{0:yyyyMMdd_HHmmss}.old" -f (Get-Date)); "dist\Cube Radar.exe was running: old file moved aside" }
+    if (-not (Test-Path $path)) { return $false }
+    try { [System.IO.File]::Open($path, "Open", "ReadWrite", "None").Dispose(); return $false } catch { return $true }
 }
-Copy-Item $exe $shared
+if (Test-Locked $shared)
+{
+    $signal = $null
+    if ([System.Threading.EventWaitHandle]::TryOpenExisting("Local\CubeRadar.Quit", [ref]$signal))
+    {
+        [void]$signal.Set()
+        $signal.Dispose()
+        "dist\Cube Radar.exe was running: asked it to quit"
+    }
+    for ($i = 0; $i -lt 40 -and (Test-Locked $shared); $i++) { Start-Sleep -Milliseconds 250 }
+    if (Test-Locked $shared) { throw "dist\Cube Radar.exe is still running. Quit it (tray icon -> Beenden) and build again." }
+}
+Copy-Item $exe $shared -Force
 Copy-Item (Join-Path $root "LICENSE") $stage
 Copy-Item (Join-Path $root "docs\LIESMICH_TESTER.txt") (Join-Path $stage "LIESMICH.txt")
 Remove-Item $publish -Recurse -Force
