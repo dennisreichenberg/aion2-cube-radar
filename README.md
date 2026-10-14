@@ -10,8 +10,8 @@ Stand: **Phase 3 (Radar) abgenommen**. Der Hidden Cube ist in Verteron identifiz
 
 Fertige Version für Windows 10/11 (64 Bit): unter [**Releases**](https://github.com/dennisreichenberg/aion2-cube-radar/releases/latest)
 die Datei `Cube.Radar.exe` herunterladen und doppelklicken. Eine Installation ist nicht nötig, .NET ist enthalten.
-Voraussetzung ist [Npcap](https://npcap.com) (Installer mit Standardoptionen). Bedienung und Hinweise stehen in der
-[LIESMICH](docs/LIESMICH_TESTER.txt).
+Voraussetzung ist [Npcap](https://npcap.com) (Installer mit Standardoptionen). Wie man das Mini-Radar liest und
+bedient, steht in der **[Anleitung](docs/ANLEITUNG.md)**.
 
 > **Achtung:** Laut einem anderen Tool-Autor stuft der NCSOFT-Support Software, die Spieldaten mitliest, als Verstoß
 > gegen die Nutzungsbedingungen ein. Die Nutzung erfolgt auf eigenes Risiko.
