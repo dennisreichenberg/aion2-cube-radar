@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>cuberadar</AssemblyName>
-    <Version>0.8.0</Version>
+    <Version>0.8.1</Version>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>..\..\assets\cuberadar.ico</ApplicationIcon>
     <Product>Cube Radar</Product>
