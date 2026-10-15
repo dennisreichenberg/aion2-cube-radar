@@ -118,8 +118,9 @@ Die volle Ansicht öffnet `http://127.0.0.1:5313` im Browser.
   - **Zoom:** `Strg+Umschalt+F12`, oder das Mausrad über dem Overlay bei offenen Einstellungen (60 / 120 / 250 m).
   - **Automatisch aus- und eingeblendet:** Es ist nur sichtbar, wenn Aion 2 das aktive Fenster ist. Ist der
     Mauszeiger sichtbar (Menüs, UI-Modus), blendet es sich ebenfalls aus, auch wenn der Zeiger an seiner Stelle
-    steht. So verdeckt es kein Menü.
-    - Gelesen wird dafür nur der Windows-Fenster- und Mauszeiger-Status, nichts aus dem Spiel.
+    steht. So verdeckt es kein Menü. Ausnahme: Hältst du `Umschalt` (oder `Strg`/`Alt`) gedrückt und der Zeiger
+    erscheint dadurch, bleibt es sichtbar, bis du die Taste loslässt.
+    - Gelesen wird dafür nur der Windows-Fenster-, Mauszeiger- und Tastenstatus, nichts aus dem Spiel.
     - Ohne laufendes Spiel (Replay) ist es immer sichtbar.
     - Das Ausblenden in Menüs schaltest du in `data\settings.json` mit `"OverlayHideInMenus": false` ab.
   - `Strg+Umschalt+F10` schaltet es ganz ab und wieder an.

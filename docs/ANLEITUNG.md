@@ -78,7 +78,8 @@ nur bei Ereignissen, etwa wenn du einen Buff wirkst oder angegriffen wirst.
 - **Ganz aus/an:** `Strg+Umschalt+F10`.
 - **Automatisch ausblenden:** Das Radar ist nur sichtbar, wenn Aion 2 das aktive Fenster ist. In Menüs (solange
   der Mauszeiger sichtbar ist) blendet es sich ebenfalls aus, auch wenn der Zeiger an seiner Stelle steht. So
-  verdeckt es nie ein Menü. Beides lässt sich in den Einstellungen abschalten.
+  verdeckt es nie ein Menü. Hältst du `Umschalt` gedrückt (Aion 2 zeigt dann den Zeiger), bleibt es dagegen
+  sichtbar, bis du loslässt; dasselbe gilt für `Strg` und `Alt`. Beides lässt sich in den Einstellungen abschalten.
 - Das Radar liegt immer im Vordergrund, nimmt dem Spiel aber nie den Fokus.
 
 **Rechtsklick auf das Radar-Symbol in der Taskleiste:**

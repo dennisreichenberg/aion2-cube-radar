@@ -33,6 +33,7 @@ Mini-Radar
   Neuer Cube = Piepton. Im Windows-Lautstaerkemixer steht "Cube Radar" als eigene App (unabhaengig von
   "Systemsounds"), dort laesst er sich zusaetzlich regeln oder stummschalten.
   Es blendet sich aus, wenn Aion 2 nicht im Vordergrund ist oder der Mauszeiger sichtbar ist (Menues).
+  Erscheint der Zeiger nur, weil du Umschalt (oder Strg/Alt) gedrueckt haeltst, bleibt es sichtbar.
   Verschieben: Strg+Umschalt+F11 oeffnet die Einstellungen, solange sie offen sind, bleibt das Radar
   sichtbar und laesst sich mit der Maus ziehen (Mausrad darueber = Zoom). Nochmal F11 schliesst sie.
   Strg+Umschalt+F10 = ganz aus/an, Strg+Umschalt+F12 = Zoom 60 / 120 / 250 m
