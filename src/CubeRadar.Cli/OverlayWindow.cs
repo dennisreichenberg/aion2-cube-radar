@@ -342,7 +342,9 @@ internal sealed class OverlayWindow : Form
         if (_gamePids.Length == 0) return true; // no game running (replay / testing): just show it
 
         GetWindowThreadProcessId(GetForegroundWindow(), out var pid);
-        if (pid == Environment.ProcessId) return true; // our settings window is in front: keep the overlay visible
+        // Our own window is in front (tray menu, a dialog): leave the overlay as it is. Showing it now would close the
+        // tray menu that is just opening (right-click on the tray icon brings our process to the front).
+        if (pid == Environment.ProcessId) return Visible;
         if (!_gamePids.Contains((int)pid)) return !_settings.OverlayOnlyWhenGameFocused;
 
         if (!_settings.OverlayHideInMenus) return true;
