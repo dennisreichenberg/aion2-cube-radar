@@ -204,7 +204,8 @@ internal sealed class SettingsForm : Form
         var captures = Btn("Aufnahmen-Ordner öffnen");
         captures.Click += (_, _) => actions.OpenCaptures();
         Full(Flow(reset, web, captures));
-        Full(new Label { Text = "Hotkeys: Strg+Umschalt+F10 = Overlay an/aus · Strg+Umschalt+F12 = Zoom · Verschieben: Overlay mit der Maus ziehen",
+        Full(new Label { Text = "Solange dieses Fenster offen ist, bleibt das Overlay sichtbar: zum Verschieben mit der Maus ziehen, " +
+                                "Mausrad darüber = Zoom.\nHotkeys (Strg+Umschalt): F10 = Overlay an/aus · F11 = Einstellungen auf/zu · F12 = Zoom",
             AutoSize = true, ForeColor = Muted, MaximumSize = new Size(420, 0), Margin = new Padding(0, 8, 0, 0) });
 
         var quit = Btn("Radar beenden");

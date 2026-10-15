@@ -80,7 +80,8 @@ int Usage()
             --no-record        do not record raw.pcapng into captures/radar_<date_time>/
             --no-hotkeys, --hotkeys SPEC, --no-beep   as for 'dump live' (beep also on new cubes)
             --no-browser       do not open the browser
-            --no-overlay       no mini radar overlay (drag it with the mouse; Ctrl+Shift+F10 on/off, F12 range)
+            --no-overlay       no mini radar overlay (Ctrl+Shift+F10 on/off, F11 settings: drag it while they are
+                               open, F12 range)
             --overlay-only     only the overlay: no browser, console hidden (log in the session folder);
                                tray icon to open the web view or quit
         cuberadar --quit                           ask the running radar to close (like "Beenden" in the tray)

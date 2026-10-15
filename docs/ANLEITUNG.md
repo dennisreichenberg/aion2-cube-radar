@@ -70,12 +70,15 @@ nur bei Ereignissen, etwa wenn du einen Buff wirkst oder angegriffen wirst.
 
 ## 4. Bedienen
 
-- **Verschieben:** einfach mit der Maus ziehen. Die Stelle wird gespeichert.
-- **Zoom:** Mausrad über dem Radar (hoch = näher), oder `Strg+Umschalt+F12`. Stufen: 60 / 120 / 250 m.
+- **Verschieben:** `Strg+Umschalt+F11` öffnet die Einstellungen. Solange sie offen sind, bleibt das Radar sichtbar
+  und lässt sich mit der Maus ziehen. Die Stelle wird gespeichert. Noch einmal `Strg+Umschalt+F11` schließt die
+  Einstellungen wieder.
+- **Zoom:** `Strg+Umschalt+F12`, oder das Mausrad über dem Radar (hoch = näher), solange die Einstellungen offen
+  sind. Stufen: 60 / 120 / 250 m.
 - **Ganz aus/an:** `Strg+Umschalt+F10`.
 - **Automatisch ausblenden:** Das Radar ist nur sichtbar, wenn Aion 2 das aktive Fenster ist. In Menüs (solange
-  der Mauszeiger sichtbar ist) blendet es sich ebenfalls aus. Fährst du mit dem Zeiger an seine Stelle, erscheint
-  es wieder, damit du es greifen kannst. Beides lässt sich in den Einstellungen abschalten.
+  der Mauszeiger sichtbar ist) blendet es sich ebenfalls aus, auch wenn der Zeiger an seiner Stelle steht. So
+  verdeckt es nie ein Menü. Beides lässt sich in den Einstellungen abschalten.
 - Das Radar liegt immer im Vordergrund, nimmt dem Spiel aber nie den Fokus.
 
 **Rechtsklick auf das Radar-Symbol in der Taskleiste:**
@@ -84,8 +87,9 @@ Aufnahmen-Ordner öffnen, Beenden.
 
 ## 5. Einstellungen
 
-Öffnen über ⚙ oben rechts im Mini-Radar oder per Doppelklick auf das Radar-Symbol. Änderungen wirken sofort und
-werden gespeichert.
+Öffnen mit `Strg+Umschalt+F11` (auch im Spiel), per Doppelklick auf das Radar-Symbol oder über ⚙ oben rechts im
+Mini-Radar. Änderungen wirken sofort und werden gespeichert. Solange das Fenster offen ist, bleibt das Mini-Radar
+sichtbar, damit du es verschieben und zoomen kannst.
 
 - **Ton bei neuem Cube:** an/aus, „Testen“, Lautstärke (beim Verstellen hörst du den Ton) und optional eine
   eigene `.wav`-Datei statt des Standard-Pieptons. Im Windows-Lautstärkemixer steht „Cube Radar“ als eigene App

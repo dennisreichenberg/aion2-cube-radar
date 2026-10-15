@@ -32,13 +32,13 @@ Mini-Radar
   (gleiche Hoehe) mit z. B. "86 m ▲38". Cubes ausserhalb des Zooms: Doppelpfeil » am Rand.
   Neuer Cube = Piepton. Im Windows-Lautstaerkemixer steht "Cube Radar" als eigene App (unabhaengig von
   "Systemsounds"), dort laesst er sich zusaetzlich regeln oder stummschalten.
-  Verschieben: einfach mit der Maus ziehen. Zoom: Mausrad ueber dem Radar.
   Es blendet sich aus, wenn Aion 2 nicht im Vordergrund ist oder der Mauszeiger sichtbar ist (Menues).
-  Faehrst du mit dem Zeiger an seine Stelle, erscheint es zum Greifen.
+  Verschieben: Strg+Umschalt+F11 oeffnet die Einstellungen, solange sie offen sind, bleibt das Radar
+  sichtbar und laesst sich mit der Maus ziehen (Mausrad darueber = Zoom). Nochmal F11 schliesst sie.
   Strg+Umschalt+F10 = ganz aus/an, Strg+Umschalt+F12 = Zoom 60 / 120 / 250 m
 
 Einstellungen
-  Zahnrad oben rechts im Mini-Radar (oder Doppelklick auf das Radar-Symbol in der Taskleiste):
+  Strg+Umschalt+F11, Zahnrad oben rechts im Mini-Radar oder Doppelklick auf das Radar-Symbol:
   Ton an/aus und testen, Lautstaerke (beim Verstellen ertoent der Ton), eigene .wav, Zoom, Groesse,
   Deckkraft, Norden, wann das Radar sichtbar ist,
   Position zuruecksetzen, Web-Ansicht oeffnen (grosse Karte und Liste im Browser), Aufnahmen-Ordner oeffnen,

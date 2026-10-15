@@ -113,11 +113,12 @@ Die volle Ansicht öffnet `http://127.0.0.1:5313` im Browser.
   - Cubes erscheinen als ▲/▼/■ (über, unter oder auf deiner Höhe) mit „86 m ▲38“. Liegt ein Cube außerhalb des Zooms,
     zeigt ein »-Zeiger am Rand in seine Richtung.
   - Die Kopfzeile zeigt das Alter deiner Position und den Zoom.
-  - **Verschieben:** einfach mit der Maus ziehen; die Position wird beim Loslassen gespeichert.
-  - **Zoom:** Mausrad über dem Overlay, oder `Strg+Umschalt+F12` (60 / 120 / 250 m).
+  - **Verschieben:** `Strg+Umschalt+F11` öffnet die Einstellungen; solange sie offen sind, bleibt das Overlay
+    sichtbar und lässt sich mit der Maus ziehen. Die Position wird beim Loslassen gespeichert.
+  - **Zoom:** `Strg+Umschalt+F12`, oder das Mausrad über dem Overlay bei offenen Einstellungen (60 / 120 / 250 m).
   - **Automatisch aus- und eingeblendet:** Es ist nur sichtbar, wenn Aion 2 das aktive Fenster ist. Ist der
-    Mauszeiger sichtbar (Menüs, UI-Modus), blendet es sich ebenfalls aus. Fährst du mit dem Zeiger an seine Stelle,
-    erscheint es, damit du es greifen kannst.
+    Mauszeiger sichtbar (Menüs, UI-Modus), blendet es sich ebenfalls aus, auch wenn der Zeiger an seiner Stelle
+    steht. So verdeckt es kein Menü.
     - Gelesen wird dafür nur der Windows-Fenster- und Mauszeiger-Status, nichts aus dem Spiel.
     - Ohne laufendes Spiel (Replay) ist es immer sichtbar.
     - Das Ausblenden in Menüs schaltest du in `data\settings.json` mit `"OverlayHideInMenus": false` ab.

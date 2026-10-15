@@ -10,11 +10,13 @@ namespace CubeRadar.Cli;
 
 /// <summary>
 /// Small always-on-top mini radar over the game: north up, we in the middle, live cubes with distance and height, our
-/// recent trail. It never takes focus and can always be dragged with the mouse (position saved on release); the mouse
-/// wheel zooms. Like other game overlays it hides while AION 2 is not the foreground window and, optionally, while the
-/// mouse cursor is visible (menus / UI mode: in the world the game hides the cursor) unless the cursor is over the
-/// overlay, so it can still be grabbed. Only Windows window/cursor state is read, nothing from the game itself.
-/// Ctrl+Shift+F10 switches it off/on, Ctrl+Shift+F12 cycles the range. Nothing can draw over exclusive fullscreen.
+/// recent trail. It never takes focus and can be dragged with the mouse whenever it is visible (position saved on
+/// release); the mouse wheel zooms. Like other game overlays it hides while AION 2 is not the foreground window and,
+/// optionally, while the mouse cursor is visible (menus / UI mode: in the world the game hides the cursor), also when
+/// the cursor is over it, so it never covers a menu. While the settings window is open it stays visible, so it can be
+/// moved and zoomed then. Only Windows window/cursor state is read, nothing from the game itself.
+/// Ctrl+Shift+F10 switches it off/on, Ctrl+Shift+F11 opens/closes the settings, Ctrl+Shift+F12 cycles the range.
+/// Nothing can draw over exclusive fullscreen.
 /// </summary>
 internal sealed class OverlayWindow : Form
 {
@@ -143,6 +145,15 @@ internal sealed class OverlayWindow : Form
         _settingsForm.Show();
     });
 
+    /// <summary>Ctrl+Shift+F11: settings open (overlay visible to move and zoom it) or closed again.</summary>
+    public void ToggleSettings() => Ui(() =>
+    {
+        if (SettingsOpen) _settingsForm!.Close();
+        else OpenSettings();
+    });
+
+    private bool SettingsOpen => _settingsForm is { IsDisposed: false, Visible: true };
+
     private void ResetPosition()
     {
         Location = DefaultLocation();
@@ -199,7 +210,7 @@ internal sealed class OverlayWindow : Form
         _updateItem = new ToolStripMenuItem { Visible = false, Font = new Font(menu.Font, FontStyle.Bold) };
         _updateItem.Click += (_, _) => ConfirmUpdate();
         menu.Items.Add(_updateItem);
-        menu.Items.Add("Einstellungen …", null, (_, _) => OpenSettings());
+        menu.Items.Add("Einstellungen … (Strg+Umschalt+F11)", null, (_, _) => OpenSettings());
         menu.Items.Add("Overlay ein/aus (Strg+Umschalt+F10)", null, (_, _) => ToggleVisible());
         menu.Items.Add("Zoom wechseln (Strg+Umschalt+F12)", null, (_, _) => CycleRange());
         menu.Items.Add("Web-Ansicht öffnen", null, (_, _) => _actions.OpenWeb());
@@ -234,7 +245,7 @@ internal sealed class OverlayWindow : Form
         if (_actions.Updater is not { Available: { } release, Installing: false } updater) return;
         var version = release.Version.ToString(3);
         // The settings window is topmost: an unowned message box could open hidden behind it.
-        var owner = _settingsForm is { IsDisposed: false, Visible: true } ? _settingsForm : null;
+        var owner = SettingsOpen ? _settingsForm : null;
         DialogResult Ask(string text, MessageBoxIcon icon) => MessageBox.Show(owner, text, "Cube Radar – Update", MessageBoxButtons.YesNo, icon);
 
         if (!release.Installable)
@@ -318,6 +329,7 @@ internal sealed class OverlayWindow : Form
     /// <summary>Only while the game is in front, and (optionally) not while its cursor is out for a menu.</summary>
     private bool WantedOverGame()
     {
+        if (SettingsOpen) return true; // the user is adjusting it: keep it visible to drag and zoom
         var now = Environment.TickCount64;
         if (now - _gamePidsAt > 5_000)
         {
@@ -338,7 +350,6 @@ internal sealed class OverlayWindow : Form
             _cursorShownSince = -1;
             return true;
         }
-        if (Bounds.Contains(Cursor.Position)) return true; // pointing at it: show, so it can be dragged
         if (_cursorShownSince < 0) _cursorShownSince = now;
         return now - _cursorShownSince < 300; // brief cursor flashes do not make it flicker
     }

@@ -247,10 +247,12 @@ internal static class RadarCommand
             overlay = OverlayWindow.Start(engine.Snapshot, settings, actions);
             overlay.ShowTray();
             if (Opt("--settings-png") is { } settingsPng) SettingsForm.SavePng(settingsPng, settings, actions);
-            overlayKeys = new GlobalHotkeys(GlobalHotkeys.Parse("ctrl+shift+F10=overlay on/off,ctrl+shift+F12=overlay range"),
+            overlayKeys = new GlobalHotkeys(
+                GlobalHotkeys.Parse("ctrl+shift+F10=overlay on/off,ctrl+shift+F11=overlay settings,ctrl+shift+F12=overlay range"),
                 b =>
                 {
                     if (b.Label.EndsWith("on/off")) overlay.ToggleVisible();
+                    else if (b.Label.EndsWith("settings")) overlay.ToggleSettings();
                     else overlay.CycleRange();
                 });
             foreach (var (b, ok, err) in overlayKeys.Results)
