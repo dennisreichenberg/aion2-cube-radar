@@ -20,7 +20,8 @@ GitHub, und die lässt sich abschalten (siehe [Updates](#8-updates)).
 1. Unter [Releases](https://github.com/dennisreichenberg/aion2-cube-radar/releases/latest) `Cube.Radar.exe`
    herunterladen und irgendwohin legen, z. B. auf den Desktop. Eine Installation ist nicht nötig.
 2. Doppelklick auf die exe. Meldet Windows SmartScreen eine unbekannte App: „Weitere Informationen“ →
-   „Trotzdem ausführen“.
+   „Trotzdem ausführen“. Danach fragt Windows, ob Cube Radar Änderungen vornehmen darf: „Ja“ (Admin-Rechte, damit
+   das Mini-Radar die Alt-Taste erkennt, siehe [Bedienen](#4-bedienen)).
 3. Unten rechts in der Taskleiste erscheint ein Radar-Symbol (evtl. hinter dem kleinen ^-Pfeil). Ein Fenster gibt
    es nicht, das Radar läuft im Hintergrund.
 4. Aion 2 starten und in die Welt gehen. Das Mini-Radar erscheint, sobald Aion 2 das aktive Fenster ist.
@@ -78,8 +79,12 @@ nur bei Ereignissen, etwa wenn du einen Buff wirkst oder angegriffen wirst.
 - **Ganz aus/an:** `Strg+Umschalt+F10`.
 - **Automatisch ausblenden:** Das Radar ist nur sichtbar, wenn Aion 2 das aktive Fenster ist. In Menüs (solange
   der Mauszeiger sichtbar ist) blendet es sich ebenfalls aus, auch wenn der Zeiger an seiner Stelle steht. So
-  verdeckt es nie ein Menü. Hältst du `Umschalt` gedrückt (Aion 2 zeigt dann den Zeiger), bleibt es dagegen
-  sichtbar, bis du loslässt; dasselbe gilt für `Strg` und `Alt`. Beides lässt sich in den Einstellungen abschalten.
+  verdeckt es nie ein Menü. Hältst du `Alt` gedrückt (Aion 2 zeigt dann den Zeiger), bleibt es dagegen sichtbar,
+  bis du loslässt. Beides lässt sich in den Einstellungen abschalten.
+- **Warum Admin-Rechte?** Aion 2 läuft mit Admin-Rechten, und solange es vorne ist, verbirgt Windows die Tastatur
+  vor Programmen ohne sie. Nur mit Admin-Rechten sieht das Radar, dass `Alt` gedrückt ist, und hält den Zeiger dann
+  nicht für ein Menü. Deshalb fragt Windows beim Start nach. Lehnst du ab, läuft das Radar trotzdem, nur blendet
+  `Alt` es dann wie ein Menü aus. Browser und Explorer öffnet es weiterhin ohne Admin-Rechte.
 - Das Radar liegt immer im Vordergrund, nimmt dem Spiel aber nie den Fokus.
 
 **Rechtsklick auf das Radar-Symbol in der Taskleiste:**
@@ -98,7 +103,8 @@ sichtbar, damit du es verschieben und zoomen kannst.
 - **Overlay:** Zoom, Größe (75–150 %), Deckkraft.
 - **Norden:** Zeigt der Cube in eine andere Richtung als auf der Minimap im Spiel (gespiegelt oder um 90° gedreht),
   hier umstellen, bis es passt. Standard ist „−Y“.
-- **Wann ist das Overlay sichtbar?** „Nur wenn Aion 2 im Vordergrund ist“ und „In Menüs ausblenden“.
+- **Wann ist das Overlay sichtbar?** „Nur wenn Aion 2 im Vordergrund ist“, „In Menüs ausblenden“ und „Mit
+  Admin-Rechten starten, damit Alt erkannt wird“ (wirkt ab dem nächsten Start).
 - **Updates:** automatische Suche an/aus, „Jetzt prüfen“, „Jetzt aktualisieren“, „Versionen auf GitHub“ (siehe
   [Updates](#8-updates)).
 - **Sonstiges:** Position zurücksetzen (falls das Radar außerhalb des Bildschirms gelandet ist), Web-Ansicht öffnen,

@@ -65,18 +65,28 @@ internal static class RadarCommand
 
         // One live radar at a time: a second one would fight over hotkeys, the web port and the capture.
         // A radar that is just closing gets a moment (a quick restart); after an update the installer already waited.
-        using var instance = new Mutex(initiallyOwned: true, InstanceLockName, out var firstInstance);
+        // Shared between radars with and without admin rights, so either one sees the other.
+        using var instance = Elevation.SharedMutex(initiallyOwned: true, InstanceLockName, out var firstInstance);
         if (replay is null && !firstInstance) firstInstance = WaitFor(instance, TimeSpan.FromSeconds(afterUpdate ? 60 : 3));
-        if (replay is null && !firstInstance)
+        int AlreadyRunning()
         {
             Tell("Cube Radar läuft bereits.\n\nBeenden: Rechtsklick auf das Radar-Symbol unten rechts in der Taskleiste → „Beenden“ " +
                  "(oder ⚙ im Overlay → „Radar beenden“).");
             return 3;
         }
+        if (replay is null && !firstInstance) return AlreadyRunning();
+
+        var settings = RadarSettings.Load(Path.Combine(AppPaths.DataDir, "settings.json"));
+        // Admin rights let the overlay see Alt in the elevated game (see Elevation). Declined: go on without them.
+        if (replay is null && overlayOnly && settings.OverlayHideInMenus && settings.OverlayAdminRights && !Elevation.IsElevated)
+        {
+            instance.ReleaseMutex(); // the elevated copy takes over the lock
+            if (Elevation.TryRestartElevated(Environment.GetCommandLineArgs().Skip(1))) return 0;
+            if (!WaitFor(instance, TimeSpan.FromSeconds(3))) return AlreadyRunning();
+        }
 
         var cfg = RadarConfig.Load(AppPaths.Config("radar.json"), AppPaths.Config("cubes.json"), AppPaths.DataRoot);
         var spots = SpotIndex.TryLoad(cfg.SpotsCsv);
-        var settings = RadarSettings.Load(Path.Combine(AppPaths.DataDir, "settings.json"));
         var overlayPng = Opt("--overlay-png");
         var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         using var store = new SqliteRadarStore(
@@ -109,7 +119,7 @@ internal static class RadarCommand
             stop.Set();
         };
         // "cuberadar --quit" asks the live radar to close, like "Beenden" in the tray.
-        using var quitSignal = replay is null ? new EventWaitHandle(false, EventResetMode.AutoReset, QuitSignalName) : null;
+        using var quitSignal = replay is null ? Elevation.SharedEvent(QuitSignalName) : null;
         if (quitSignal is not null)
             ThreadPool.RegisterWaitForSingleObject(quitSignal, (_, _) => stop.Set(), null, Timeout.Infinite, executeOnlyOnce: true);
 
@@ -221,6 +231,7 @@ internal static class RadarCommand
         if (overlayOnly) HideConsole(dir is null ? Path.Combine(Path.GetTempPath(), $"cuberadar_{stamp}.log") : Path.Combine(dir, "radar.log"));
         Console.WriteLine($"radar: {url}");
         if (dir is not null) Console.WriteLine($"session: {dir}");
+        Console.WriteLine($"admin rights: {(Elevation.IsElevated ? "yes (the overlay sees Alt)" : "no")}");
         Console.WriteLine($"cube templates: {string.Join(", ", engine.Templates.Select(t => $"{t.Template} {t.Zone} ({t.Status})"))}");
         Console.WriteLine(spots is null ? "spot list: none (optional, see config/radar.json spots_csv)" : $"spot list: {spots.All.Count} spots");
         if (!a.Contains("--no-browser") && !overlayOnly) TryOpen(url);
@@ -384,7 +395,7 @@ internal static class RadarCommand
     {
         try
         {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            Elevation.Open(url);
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
         {

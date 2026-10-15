@@ -13,10 +13,10 @@ namespace CubeRadar.Cli;
 /// recent trail. It never takes focus and can be dragged with the mouse whenever it is visible (position saved on
 /// release); the mouse wheel zooms. Like other game overlays it hides while AION 2 is not the foreground window and,
 /// optionally, while the mouse cursor is visible (menus / UI mode: in the world the game hides the cursor), also when
-/// the cursor is over it, so it never covers a menu. A cursor that comes out while Shift, Ctrl or Alt is held (AION 2
-/// shows it while Shift is held) does not count as a menu as long as the key stays down. While the settings window is
-/// open it stays visible, so it can be moved and zoomed then. Only Windows window/cursor/key state is read, nothing
-/// from the game itself.
+/// the cursor is over it, so it never covers a menu. A cursor that comes out while Alt is held (AION 2 shows it then)
+/// does not count as a menu as long as Alt stays down; this needs admin rights, see <see cref="Elevation"/>. While the
+/// settings window is open it stays visible, so it can be moved and zoomed then. Only Windows window/cursor/key state is
+/// read, nothing from the game itself.
 /// Ctrl+Shift+F10 switches it off/on, Ctrl+Shift+F11 opens/closes the settings, Ctrl+Shift+F12 cycles the range.
 /// Nothing can draw over exclusive fullscreen.
 /// </summary>
@@ -24,7 +24,7 @@ internal sealed class OverlayWindow : Form
 {
     private const int WsExLayered = 0x80000, WsExToolWindow = 0x80, WsExNoActivate = 0x08000000, WsExTopmost = 0x8;
     private const int WmNcHitTest = 0x84, WmMouseActivate = 0x21, WmExitSizeMove = 0x232, HtCaption = 2, MaNoActivate = 3;
-    private const int CursorShowing = 0x1, VkShift = 0x10, VkControl = 0x11, VkMenu = 0x12;
+    private const int CursorShowing = 0x1, VkMenu = 0x12;
     private static readonly IntPtr HwndTopmost = new(-1);
     public static readonly int[] Ranges = [60, 120, 250];
 
@@ -39,7 +39,7 @@ internal sealed class OverlayWindow : Form
     private int[] _gamePids = [];
     private long _gamePidsAt = -10_000;
     private long _cursorShownSince = -1;
-    private bool _cursorByModifier;
+    private bool _cursorByAlt;
     private NotifyIcon? _tray;
     private ToolStripMenuItem? _updateItem;
 
@@ -355,16 +355,17 @@ internal sealed class OverlayWindow : Form
             _cursorShownSince = -1;
             return true;
         }
-        var modifierDown = KeyHeld(VkShift) || KeyHeld(VkControl) || KeyHeld(VkMenu);
+        // Without admin rights Windows reports no keys while the (elevated) game is in front: then Alt counts as a menu.
+        var altDown = (GetAsyncKeyState(VkMenu) & 0x8000) != 0;
         if (_cursorShownSince < 0)
         {
             _cursorShownSince = now;
-            _cursorByModifier = modifierDown; // came out while a key is held (Shift in AION 2), not for a menu
+            _cursorByAlt = altDown; // came out while Alt is held (AION 2 shows it then), not for a menu
         }
-        if (_cursorByModifier)
+        if (_cursorByAlt)
         {
-            if (modifierDown) return true;
-            _cursorByModifier = false; // key released but the cursor stays out: a menu after all
+            if (altDown) return true;
+            _cursorByAlt = false; // Alt released but the cursor stays out: a menu after all
             _cursorShownSince = now;
         }
         return now - _cursorShownSince < 300; // brief cursor flashes do not make it flicker
@@ -378,8 +379,6 @@ internal sealed class OverlayWindow : Form
         _timer.Dispose();
         base.OnFormClosed(e);
     }
-
-    private static bool KeyHeld(int vk) => (GetAsyncKeyState(vk) & 0x8000) != 0;
 
     private static bool OnSomeScreen(Point p) => Screen.AllScreens.Any(s => s.WorkingArea.Contains(p));
 

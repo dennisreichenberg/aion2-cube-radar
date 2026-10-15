@@ -248,7 +248,7 @@ internal sealed class Updater : IDisposable
     {
         try
         {
-            Process.Start(new ProcessStartInfo(Available?.PageUrl ?? UpdateClient.ReleasesPage) { UseShellExecute = true });
+            Elevation.Open(Available?.PageUrl ?? UpdateClient.ReleasesPage);
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
         {

@@ -156,6 +156,17 @@ internal sealed class SettingsForm : Form
         var menus = Check("In Menüs ausblenden (solange der Mauszeiger sichtbar ist)", settings.OverlayHideInMenus);
         menus.CheckedChanged += (_, _) => { settings.OverlayHideInMenus = menus.Checked; Save(); };
         Full(menus);
+        var admin = Check("Mit Admin-Rechten starten, damit Alt erkannt wird", settings.OverlayAdminRights);
+        admin.CheckedChanged += (_, _) => { settings.OverlayAdminRights = admin.Checked; Save(); };
+        admin.Enabled = menus.Checked;
+        menus.CheckedChanged += (_, _) => admin.Enabled = menus.Checked;
+        admin.Margin = new Padding(20, 3, 0, 0);
+        Full(admin);
+        Full(new Label { Text = "Hältst du in Aion 2 Alt, erscheint der Mauszeiger. Ob dabei Alt gedrückt ist, sieht Cube Radar nur mit " +
+                                "Admin-Rechten (Aion 2 läuft selbst mit ihnen); sonst blendet Alt das Overlay wie ein Menü aus. " +
+                                "Wirkt ab dem nächsten Start, Windows fragt dann nach." +
+                                (Elevation.IsElevated ? "" : "\nGerade läuft Cube Radar ohne Admin-Rechte."),
+            AutoSize = true, ForeColor = Muted, MaximumSize = new Size(400, 0), Margin = new Padding(20, 0, 0, 4) });
 
         // ---- updates (single exe only)
         if (actions.Updater is { } updater)

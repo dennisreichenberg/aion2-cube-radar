@@ -11,7 +11,8 @@ Stand: **Phase 3 (Radar) abgenommen**. Der Hidden Cube ist in Verteron identifiz
 
 Fertige Version für Windows 10/11 (64 Bit): unter [**Releases**](https://github.com/dennisreichenberg/aion2-cube-radar/releases/latest)
 die Datei `Cube.Radar.exe` herunterladen und doppelklicken. Eine Installation ist nicht nötig, .NET ist enthalten.
-Voraussetzung ist [Npcap](https://npcap.com) (Installer mit Standardoptionen). Wie man das Mini-Radar liest und
+Voraussetzung ist [Npcap](https://npcap.com) (Installer mit Standardoptionen). Beim Start fragt Windows nach
+Admin-Rechten, damit das Overlay die Alt-Taste erkennt (abschaltbar, siehe unten). Wie man das Mini-Radar liest und
 bedient, steht in der **[Anleitung](docs/ANLEITUNG.md)**. Ab Version 0.8.0 meldet sich das Radar selbst, wenn es
 eine neue Version gibt, und aktualisiert sich auf Klick ([Updates](docs/ANLEITUNG.md#8-updates)).
 
@@ -118,11 +119,16 @@ Die volle Ansicht öffnet `http://127.0.0.1:5313` im Browser.
   - **Zoom:** `Strg+Umschalt+F12`, oder das Mausrad über dem Overlay bei offenen Einstellungen (60 / 120 / 250 m).
   - **Automatisch aus- und eingeblendet:** Es ist nur sichtbar, wenn Aion 2 das aktive Fenster ist. Ist der
     Mauszeiger sichtbar (Menüs, UI-Modus), blendet es sich ebenfalls aus, auch wenn der Zeiger an seiner Stelle
-    steht. So verdeckt es kein Menü. Ausnahme: Hältst du `Umschalt` (oder `Strg`/`Alt`) gedrückt und der Zeiger
-    erscheint dadurch, bleibt es sichtbar, bis du die Taste loslässt.
+    steht. So verdeckt es kein Menü. Ausnahme: Hältst du `Alt` (Aion 2 zeigt dann den Zeiger), bleibt es sichtbar,
+    bis du loslässt.
+    - Ob `Alt` gedrückt ist, sieht es nur mit Admin-Rechten: Aion 2 läuft selbst mit ihnen, und Windows verbirgt
+      die Tasten dann vor Programmen ohne. Deshalb startet sich das Overlay einmal mit Admin-Rechten neu (UAC-Abfrage).
+      Lehnst du ab, läuft es ohne weiter, und `Alt` blendet es wie ein Menü aus. Browser und Explorer öffnet es
+      trotzdem ohne Admin-Rechte.
     - Gelesen wird dafür nur der Windows-Fenster-, Mauszeiger- und Tastenstatus, nichts aus dem Spiel.
     - Ohne laufendes Spiel (Replay) ist es immer sichtbar.
-    - Das Ausblenden in Menüs schaltest du in `data\settings.json` mit `"OverlayHideInMenus": false` ab.
+    - Das Ausblenden in Menüs schaltest du in `data\settings.json` mit `"OverlayHideInMenus": false` ab, nur den
+      Neustart mit Admin-Rechten mit `"OverlayAdminRights": false` (beides auch in den Einstellungen).
   - `Strg+Umschalt+F10` schaltet es ganz ab und wieder an.
   - Das Spiel muss im Fenster- oder randlosen Vollbildmodus laufen; über exklusivem Vollbild kann nichts zeichnen.
   - Abschalten mit `--no-overlay`.

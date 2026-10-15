@@ -22,6 +22,8 @@ internal sealed class RadarSettings
     public bool OverlayHideInMenus { get; set; } = true;
     /// <summary>Show the overlay only while AION 2 is the foreground window.</summary>
     public bool OverlayOnlyWhenGameFocused { get; set; } = true;
+    /// <summary>Restart the overlay with admin rights, so Alt (cursor in the game) is not taken for a menu (see Elevation).</summary>
+    public bool OverlayAdminRights { get; set; } = true;
     public int OverlayScalePct { get; set; } = 100;
     public int OverlayOpacityPct { get; set; } = 90;
     /// <summary>Sound when a new cube appears.</summary>

@@ -100,9 +100,18 @@ int Print(string s)
 
 int Quit()
 {
-    if (!EventWaitHandle.TryOpenExisting(RadarCommand.QuitSignalName, out var signal))
+    EventWaitHandle? signal;
+    try
     {
-        Console.WriteLine("no live radar is running");
+        if (!EventWaitHandle.TryOpenExisting(RadarCommand.QuitSignalName, out signal))
+        {
+            Console.WriteLine("no live radar is running");
+            return 1;
+        }
+    }
+    catch (UnauthorizedAccessException)
+    {
+        Console.WriteLine("the running radar has admin rights: quit it from its tray icon, or run this as administrator");
         return 1;
     }
     using (signal) signal.Set();

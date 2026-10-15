@@ -21,6 +21,7 @@ Voraussetzungen
 Starten und beenden
   1. "Cube Radar.exe" irgendwohin legen (z. B. Desktop) und doppelklicken.
      Windows SmartScreen meldet evtl. eine unbekannte App: "Weitere Informationen" -> "Trotzdem ausfuehren".
+     Danach fragt Windows nach Admin-Rechten: "Ja" (fuer die Alt-Taste im Mini-Radar, siehe unten).
   2. Unten rechts in der Taskleiste erscheint ein Radar-Symbol (evtl. hinter dem kleinen ^-Pfeil).
   3. Aion 2 starten bzw. in die Welt gehen: Das Mini-Radar erscheint, sobald Aion 2 im Vordergrund ist.
      Steht oben "Pos. ?": im Spiel einmal einen Buff auf dich selbst wirken.
@@ -33,7 +34,9 @@ Mini-Radar
   Neuer Cube = Piepton. Im Windows-Lautstaerkemixer steht "Cube Radar" als eigene App (unabhaengig von
   "Systemsounds"), dort laesst er sich zusaetzlich regeln oder stummschalten.
   Es blendet sich aus, wenn Aion 2 nicht im Vordergrund ist oder der Mauszeiger sichtbar ist (Menues).
-  Erscheint der Zeiger nur, weil du Umschalt (oder Strg/Alt) gedrueckt haeltst, bleibt es sichtbar.
+  Haeltst du Alt (Aion 2 zeigt dann den Zeiger), bleibt es sichtbar. Das erkennt es nur mit Admin-Rechten
+  (Aion 2 laeuft selbst mit ihnen), deshalb fragt Windows beim Start nach. Lehnst du ab, laeuft es ohne,
+  und Alt blendet es wie ein Menue aus. Abschaltbar in den Einstellungen.
   Verschieben: Strg+Umschalt+F11 oeffnet die Einstellungen, solange sie offen sind, bleibt das Radar
   sichtbar und laesst sich mit der Maus ziehen (Mausrad darueber = Zoom). Nochmal F11 schliesst sie.
   Strg+Umschalt+F10 = ganz aus/an, Strg+Umschalt+F12 = Zoom 60 / 120 / 250 m
