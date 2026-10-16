@@ -1,11 +1,17 @@
-# aion2-cube-radar
+# Cube Radar: Hidden Cube Radar für Aion 2
 
-Passives Werkzeug für Aion 2 (Global). Es liest per Npcap den Server→Client-Traffic mit, wie Wireshark, und soll
-live anzeigen, wo gerade Hidden Cubes stehen. Es betreibt kein Memory-Reading und keine Injection und sendet nichts an
-das Spiel. Die einzige Internetverbindung ist die abschaltbare Update-Suche bei GitHub (nur die fertige exe).
+**Cube Radar** ist ein Mini-Radar-Overlay für **Aion 2 (Global)**, das live anzeigt, wo gerade **Hidden Cubes**
+(versteckte Würfel) stehen: Entfernung, Richtung und Höhe. Es liest per Npcap den Server→Client-Traffic mit, wie
+Wireshark. Es betreibt kein Memory-Reading und keine Injection und sendet nichts an das Spiel. Die einzige
+Internetverbindung ist die abschaltbare Update-Suche bei GitHub (nur die fertige exe).
 
-Stand: **Phase 3 (Radar) abgenommen**. Der Hidden Cube ist in Verteron identifiziert (Templates 1200039 und 1200041, Sende-Radius ≈ 100 m). Die eigene Position kommt aus vier ereignisgebundenen Quellen. Alle Erkenntnisse stehen in
-[`docs/FINDINGS.md`](docs/FINDINGS.md).
+- **Mini-Radar über dem Spiel:** Hidden Cubes in deiner Nähe mit Entfernung, Richtung und Höhe (▲ über dir, ▼ unter
+  dir), Ton bei jedem neuen Cube
+- **Status je Cube:** sichtbar, außer Sicht, wird geöffnet, geöffnet, weg
+- **Web-Ansicht** mit Karte, Liste und eigener Spot-Datenbank (Export als CSV/JSON)
+- **Eine exe** für Windows 10/11 ohne Installation, aktualisiert sich auf Klick selbst
+- Bestätigt in **Verteron**; in anderen Gebieten lernt das Radar die Cube-Kennung selbst
+  ([Wo funktioniert es?](docs/ANLEITUNG.md#7-wo-funktioniert-es))
 
 ## Download
 
@@ -19,7 +25,22 @@ eine neue Version gibt, und aktualisiert sich auf Klick ([Updates](docs/ANLEITUN
 > **Achtung:** Laut einem anderen Tool-Autor stuft der NCSOFT-Support Software, die Spieldaten mitliest, als Verstoß
 > gegen die Nutzungsbedingungen ein. Die Nutzung erfolgt auf eigenes Risiko.
 
+## English
+
+Cube Radar is a hidden cube finder for **Aion 2 (Global)**: a small radar overlay on top of the game that shows live
+where **Hidden Cubes** are, with distance, direction and height. It passively reads the game's network traffic via
+Npcap, like Wireshark. No memory reading, no injection, nothing is sent to the game. Windows 10/11, a single exe, no
+installation: download `Cube.Radar.exe` from [Releases](https://github.com/dennisreichenberg/aion2-cube-radar/releases/latest)
+and install [Npcap](https://npcap.com) first. The user interface and the guide are in German for now.
+
+> **Warning:** According to another tool author, NCSOFT support considers software that reads game data a violation
+> of the terms of service. Use at your own risk.
+
 ## Aufbau
+
+Stand: **Phase 3 (Radar) abgenommen**. Der Hidden Cube ist in Verteron identifiziert (Templates 1200039 und 1200041,
+Sende-Radius ≈ 100 m). Die eigene Position kommt aus vier ereignisgebundenen Quellen. Alle Erkenntnisse stehen in
+[`docs/FINDINGS.md`](docs/FINDINGS.md).
 
 | Pfad | Inhalt |
 |---|---|

@@ -51,4 +51,4 @@ jobs:
         run: |
           Copy-Item "dist/Cube Radar.exe" "dist/Cube.Radar.exe" # the asset name the updater looks for
           ./tools/release-notes.ps1 -Tag $env:TAG -Exe "dist/Cube.Radar.exe" -Out "dist/release-notes.md"
-          gh release create $env:TAG "dist/Cube.Radar.exe" --verify-tag --title "Cube Radar $($env:TAG.TrimStart('v'))" --notes-file "dist/release-notes.md"
+          gh release create $env:TAG "dist/Cube.Radar.exe" --verify-tag --title "Cube Radar $($env:TAG.TrimStart('v')): Hidden Cube Radar for Aion 2" --notes-file "dist/release-notes.md"

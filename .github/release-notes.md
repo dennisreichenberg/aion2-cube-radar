@@ -1,4 +1,4 @@
-Mini-Radar über dem Spiel, das anzeigt, wo gerade Hidden Cubes stehen: Entfernung, Richtung und Höhe. Es liest den Netzwerkverkehr von Aion 2 nur passiv mit, liest keinen Speicher, verändert nichts am Spiel und sendet nichts an das Spiel.
+Mini-Radar für Aion 2 (Global), das über dem Spiel anzeigt, wo gerade Hidden Cubes (versteckte Würfel) stehen: Entfernung, Richtung und Höhe. Es liest den Netzwerkverkehr von Aion 2 nur passiv mit, liest keinen Speicher, verändert nichts am Spiel und sendet nichts an das Spiel.
 
 ## Neu in {{VERSION}}
 
